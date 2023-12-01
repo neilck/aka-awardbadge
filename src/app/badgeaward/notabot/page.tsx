@@ -1,16 +1,24 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { cookies } from "next/headers";
 import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
-
+import { useSearchParams } from "next/navigation";
 import { Box, Grid, Paper, Stack, Typography } from "@mui/material";
+import { postBadgeAward } from "@/app/actions/postBadgeAward";
 
 export default function Notabot() {
   const KEY_V2 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V2!;
   const KEY_V3 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V3!;
+
   const captchaRef = useRef(null);
+  const searchParams = useSearchParams();
+  const session = searchParams.get("session");
+  const awardToken = searchParams.get("awardtoken");
+
+  const [isAwarded, setIsAwarded] = useState(false);
 
   const onChangeHandler = async () => {
     if (captchaRef.current) {
@@ -25,7 +33,13 @@ export default function Notabot() {
       });
       const google_response = await response.json();
       if (google_response.success) {
-        // TODO: redirect back to aka profiles
+        if (session && awardToken) {
+          const result = await postBadgeAward(session, awardToken);
+          console.log(result);
+          if (result.success) {
+            setIsAwarded(true);
+          }
+        }
       }
     }
   };
@@ -57,15 +71,27 @@ export default function Notabot() {
               height: "90%",
             }}
           >
-            <Typography variant="body1" component="div" sx={{ pb: 2 }}>
-              Please prove that you are not a robot by checking the box below.
-            </Typography>
-            <ReCAPTCHA
-              ref={captchaRef}
-              onChange={onChangeHandler}
-              size="normal"
-              sitekey={KEY_V2}
-            />
+            {!isAwarded && (
+              <>
+                <Typography variant="body1" component="div" sx={{ pb: 2 }}>
+                  Please prove that you are not a robot by checking the box
+                  below.
+                </Typography>
+                <ReCAPTCHA
+                  ref={captchaRef}
+                  onChange={onChangeHandler}
+                  size="normal"
+                  sitekey={KEY_V2}
+                />
+              </>
+            )}
+            {isAwarded && (
+              <>
+                <Typography variant="body1" component="div" sx={{ pb: 2 }}>
+                  Badge Awarded!
+                </Typography>
+              </>
+            )}
           </Paper>
         </Box>
       </ReCaptchaProvider>
