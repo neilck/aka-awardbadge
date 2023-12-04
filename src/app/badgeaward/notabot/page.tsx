@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { cookies } from "next/headers";
+import { useState, useRef } from "react";
 import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 import { useSearchParams } from "next/navigation";
-import { Box, Grid, Paper, Stack, Typography } from "@mui/material";
+import { Alert, AlertTitle, Box, Paper, Typography } from "@mui/material";
 import { postBadgeAward } from "@/app/actions/postBadgeAward";
 
 export default function Notabot() {
@@ -19,6 +18,7 @@ export default function Notabot() {
   const awardToken = searchParams.get("awardtoken");
 
   const [isAwarded, setIsAwarded] = useState(false);
+  const [error, setError] = useState("");
 
   const onChangeHandler = async () => {
     if (captchaRef.current) {
@@ -34,7 +34,18 @@ export default function Notabot() {
       const google_response = await response.json();
       if (google_response.success) {
         if (session && awardToken) {
-          const result = await postBadgeAward(session, awardToken);
+          const result = await postBadgeAward(session, awardToken).catch(
+            (posterror) => {
+              setError(posterror);
+              return;
+            }
+          );
+
+          if (!result) {
+            setError("unknown");
+            return;
+          }
+
           console.log(result);
           if (result.success) {
             setIsAwarded(true);
@@ -87,9 +98,18 @@ export default function Notabot() {
             )}
             {isAwarded && (
               <>
-                <Typography variant="body1" component="div" sx={{ pb: 2 }}>
-                  Badge Awarded!
-                </Typography>
+                <Alert severity="success">
+                  <AlertTitle>Success</AlertTitle>
+                  Badge has been awarded!
+                </Alert>
+              </>
+            )}
+            {error != "" && (
+              <>
+                <Alert severity="error">
+                  <AlertTitle>Error</AlertTitle>
+                  An error has occcured. ${error}
+                </Alert>
               </>
             )}
           </Paper>
