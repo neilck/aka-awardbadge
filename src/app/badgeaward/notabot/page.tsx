@@ -6,7 +6,8 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 import { useSearchParams } from "next/navigation";
 import { Alert, AlertTitle, Box, Paper, Typography } from "@mui/material";
-import { postBadgeAward } from "@/app/actions/postBadgeAward";
+import { postBadgeAward } from "./actions/postBadgeAward";
+import { getCaptchaResult } from "./actions/getCaptchaResult";
 
 export default function Notabot() {
   const KEY_V2 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V2!;
@@ -25,13 +26,8 @@ export default function Notabot() {
       // @ts-ignore
       const token = captchaRef.current.getValue();
       console.log(`token: ${token}`);
-      const response = await fetch(`../getCaptchaResult?token=${token}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      const google_response = await response.json();
+      const google_response = await getCaptchaResult(token);
+
       if (google_response.success) {
         if (session && awardToken) {
           const result = await postBadgeAward(session, awardToken).catch(
