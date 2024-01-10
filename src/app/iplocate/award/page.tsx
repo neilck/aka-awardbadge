@@ -90,7 +90,7 @@ export default function IpLocate() {
         if (state) loc = ` ${loc} ${state},`;
         if (country) loc = ` ${loc} ${country}.`;
         setSuccessMesg(`Verified in location${loc}`);
-        setErrorMesg(`Not in location${loc}`);
+        setErrorMesg(`Not in ${loc}`);
       }
     }
 
@@ -190,7 +190,7 @@ export default function IpLocate() {
           {error != "" && (
             <>
               <Alert severity="error">
-                <AlertTitle>Not in Location</AlertTitle>
+                <AlertTitle>Not in required location</AlertTitle>
                 {errorMesg}
               </Alert>
             </>
