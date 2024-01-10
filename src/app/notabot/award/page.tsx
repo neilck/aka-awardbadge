@@ -6,7 +6,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 import { useSearchParams } from "next/navigation";
 import { Alert, AlertTitle, Box, Paper, Typography } from "@mui/material";
-import { postBadgeAward } from "./actions/postBadgeAward";
+import { awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./actions/getCaptchaResult";
 
 export default function Notabot() {
@@ -25,12 +25,11 @@ export default function Notabot() {
     if (captchaRef.current) {
       // @ts-ignore
       const token = captchaRef.current.getValue();
-      console.log(`token: ${token}`);
       const google_response = await getCaptchaResult(token);
 
       if (google_response.success) {
         if (session && awardToken) {
-          const result = await postBadgeAward(session, awardToken).catch(
+          const result = await awardBadge(session, awardToken).catch(
             (posterror) => {
               setError(posterror);
               return;
@@ -42,7 +41,6 @@ export default function Notabot() {
             return;
           }
 
-          console.log(result);
           if (result.success) {
             setIsAwarded(true);
           }
