@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { SessionChecker } from "@/app/component/ThemeRegistry/SessionChecker";
 import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
@@ -15,8 +16,17 @@ export default function Notabot() {
 
   const captchaRef = useRef(null);
   const searchParams = useSearchParams();
-  const session = searchParams.get("session");
-  const awardToken = searchParams.get("awardtoken");
+  let param = searchParams.get("session");
+  let session: string | undefined = undefined;
+  if (param != null) {
+    session = param;
+  }
+
+  param = searchParams.get("awardtoken");
+  let awardToken: string | undefined = undefined;
+  if (param != null) {
+    awardToken = param;
+  }
 
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
@@ -50,7 +60,7 @@ export default function Notabot() {
   };
 
   return (
-    <>
+    <SessionChecker session={session} awardtoken={awardToken}>
       <Head>
         <title>Not-a-Bot Badge</title>
       </Head>
@@ -109,6 +119,6 @@ export default function Notabot() {
           </Paper>
         </Box>
       </ReCaptchaProvider>
-    </>
+    </SessionChecker>
   );
 }
