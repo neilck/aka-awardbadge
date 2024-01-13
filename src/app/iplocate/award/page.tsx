@@ -11,15 +11,16 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
-import { awardBadge, getConfig } from "@/app/actions/akaActions";
+import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
 import { UserParams, getUserParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "../actions/getIpToLocation";
 
 export default function IpLocate() {
   const searchParams = useSearchParams();
   const session = searchParams.get("session");
-  const awardToken = searchParams.get("awardtoken");
+  const awardtoken = searchParams.get("awardtoken");
 
+  const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
   const [userParams, setUserParams] = useState<UserParams | undefined>(
     undefined
@@ -34,27 +35,37 @@ export default function IpLocate() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getLocation();
-    getUserParams();
+    load();
   }, []);
 
-  useEffect(() => {
-    start();
-  }, []);
+  const load = async () => {
+    if (session && awardtoken) {
+      // verifying session lets us know AKA Profiles is making the request
+      const result = await verifySession(session, awardtoken);
+      if (result && result.success) {
+        setIsValidSession(true);
+        getUserParams();
+        getLocation();
+      }
+    }
+  };
 
   useEffect(() => {
     if (userParams && location) {
       const matches = checkLocation(userParams, location);
       if (matches) {
+        // award badge is current location matches user-defined parameters
         setSuccess(successMesg);
 
-        if (session && awardToken) {
+        if (session && awardtoken) {
+          // send location data to AKA Profiles in badge award call
           const awardData: any = {};
           if (location.country_name)
             awardData.d_country = location.country_name;
           if (location.state_prov) awardData.d_region = location.state_prov;
           if (location.city) awardData.d_city = location.city;
-          awardBadge(session, awardToken, awardData);
+
+          awardBadge(session, awardtoken, awardData);
         }
       } else {
         setError(errorMesg);
@@ -62,13 +73,12 @@ export default function IpLocate() {
     }
   }, [userParams, location]);
 
-  const start = async () => {
-    getUserParams();
-    getLocation();
-  };
-
+  /**
+   * Queries AKA Profiles for any saved user-configuration parameters
+   * @returns UserParams
+   */
   const getUserParams = async () => {
-    const config = await getConfig(session!, awardToken!);
+    const config = await getConfig(session!, awardtoken!);
     if (!config) {
       // set to empty to trigger check
       setUserParams({ userParams: [] });
@@ -97,6 +107,10 @@ export default function IpLocate() {
     return config;
   };
 
+  /**
+   * Get geo location based on IP Address
+   * @returns IpLocResult
+   */
   const getLocation = async () => {
     const result = await getIpToLocation();
 
@@ -107,6 +121,13 @@ export default function IpLocate() {
     return result;
   };
 
+  /**
+   * If user-defined parameters specifies match values, determine if matches
+   * If no user-defined parameters, return match.
+   * @param userParams
+   * @param location
+   * @returns boolean
+   */
   const checkLocation = (userParams: UserParams, location: Location) => {
     let matches = true;
     if (country && country != location?.country_name) matches = false;
@@ -115,6 +136,8 @@ export default function IpLocate() {
 
     return matches;
   };
+
+  if (!isValidSession) return <></>;
 
   return (
     <>

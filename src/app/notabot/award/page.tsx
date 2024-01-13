@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { SessionChecker } from "@/app/component/ThemeRegistry/SessionChecker";
 import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 import { useSearchParams } from "next/navigation";
 import { Alert, AlertTitle, Box, Paper, Typography } from "@mui/material";
-import { awardBadge } from "@/app/actions/akaActions";
+import { verifySession, awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./actions/getCaptchaResult";
 
 export default function Notabot() {
@@ -16,21 +15,30 @@ export default function Notabot() {
 
   const captchaRef = useRef(null);
   const searchParams = useSearchParams();
-  let param = searchParams.get("session");
-  let session: string | undefined = undefined;
-  if (param != null) {
-    session = param;
-  }
+  const session = searchParams.get("session");
+  const awardtoken = searchParams.get("awardtoken");
 
-  param = searchParams.get("awardtoken");
-  let awardToken: string | undefined = undefined;
-  if (param != null) {
-    awardToken = param;
-  }
-
+  const [isValidSession, setIsValidSession] = useState(false);
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    checkSession();
+  }, []);
+
+  // verifying session lets us know AKA Profiles is making the request
+  const checkSession = async () => {
+    let isValidSession = false;
+    if (session && awardtoken) {
+      const result = await verifySession(session, awardtoken);
+      if (result && result.success) {
+        isValidSession = true;
+      }
+    }
+    setIsValidSession(isValidSession);
+  };
+
+  // result of reCaptcha
   const onChangeHandler = async () => {
     if (captchaRef.current) {
       // @ts-ignore
@@ -38,8 +46,9 @@ export default function Notabot() {
       const google_response = await getCaptchaResult(token);
 
       if (google_response.success) {
-        if (session && awardToken) {
-          const result = await awardBadge(session, awardToken).catch(
+        // award badge is successful
+        if (session && awardtoken) {
+          const result = await awardBadge(session, awardtoken).catch(
             (posterror) => {
               setError(posterror);
               return;
@@ -59,8 +68,10 @@ export default function Notabot() {
     }
   };
 
+  if (!isValidSession) return <></>;
+
   return (
-    <SessionChecker session={session} awardtoken={awardToken}>
+    <>
       <Head>
         <title>Not-a-Bot Badge</title>
       </Head>
@@ -119,6 +130,6 @@ export default function Notabot() {
           </Paper>
         </Box>
       </ReCaptchaProvider>
-    </SessionChecker>
+    </>
   );
 }
