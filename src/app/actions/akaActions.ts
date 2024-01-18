@@ -2,7 +2,7 @@
 
 import debug from "debug";
 import getErrorMessage from "@/app/errors";
-import { UserParams } from "../config";
+import { ConfigParams } from "../config";
 
 const api_key = process.env.AKA_API_KEY;
 const verifySessionURL = process.env.AKA_VERIFY_SESSION_URL;
@@ -49,14 +49,14 @@ export const verifySession = async (
 export const getConfig = async (
   session: string,
   awardtoken: string
-): Promise<UserParams | undefined> => {
+): Promise<ConfigParams | undefined> => {
   if (!loadConfigURL) {
     error("AKA_LOAD_CONFIG_URL not set");
     throw new Error("AKA_LOAD_CONFIG_URL not set");
   }
   const result = await postAkaProfiles(loadConfigURL, session, awardtoken);
   if (result == undefined) return result;
-  return result as UserParams;
+  return result as ConfigParams;
 };
 
 // award badge if eligible during user session

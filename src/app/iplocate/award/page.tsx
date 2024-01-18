@@ -12,7 +12,7 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
 import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
-import { UserParams, getUserParamValue } from "@/app/config";
+import { ConfigParams, getConfigParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "../actions/getIpToLocation";
 
 export default function IpLocate() {
@@ -22,7 +22,7 @@ export default function IpLocate() {
 
   const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
-  const [userParams, setUserParams] = useState<UserParams | undefined>(
+  const [configParams, setConfigParams] = useState<ConfigParams | undefined>(
     undefined
   );
   const [country, setCountry] = useState<string | undefined>(undefined);
@@ -51,8 +51,8 @@ export default function IpLocate() {
   };
 
   useEffect(() => {
-    if (userParams && location) {
-      const matches = checkLocation(userParams, location);
+    if (configParams && location) {
+      const matches = checkLocation(location);
       if (matches) {
         // award badge is current location matches user-defined parameters
         setSuccess(successMesg);
@@ -71,7 +71,7 @@ export default function IpLocate() {
         setError(errorMesg);
       }
     }
-  }, [userParams, location]);
+  }, [configParams, location]);
 
   /**
    * Queries AKA Profiles for any saved user-configuration parameters
@@ -81,17 +81,17 @@ export default function IpLocate() {
     const config = await getConfig(session!, awardtoken!);
     if (!config) {
       // set to empty to trigger check
-      setUserParams({ userParams: [] });
+      setConfigParams({ configParams: [] });
       return;
     }
 
-    setUserParams(config);
+    setConfigParams(config);
     if (config) {
-      const country = getUserParamValue("Country", config);
+      const country = getConfigParamValue("Country", config);
       if (country != "") setCountry(country);
-      const state = getUserParamValue("State/Prov", config);
+      const state = getConfigParamValue("State/Prov", config);
       if (state != "") setState(state);
-      const city = getUserParamValue("City", config);
+      const city = getConfigParamValue("City", config);
       if (city != "") setCity(city);
 
       if (country || state || city) {
@@ -124,11 +124,10 @@ export default function IpLocate() {
   /**
    * If user-defined parameters specifies match values, determine if matches
    * If no user-defined parameters, return match.
-   * @param userParams
    * @param location
    * @returns boolean
    */
-  const checkLocation = (userParams: UserParams, location: Location) => {
+  const checkLocation = (location: Location) => {
     let matches = true;
     if (country && country != location?.country_name) matches = false;
     if (state && state != location?.state_prov) matches = false;

@@ -1,20 +1,20 @@
-export interface UserParam {
+export interface ConfigParam {
   name: string;
   value: string;
 }
 
-export interface UserParams {
-  userParams: UserParam[];
+export interface ConfigParams {
+  configParams: ConfigParam[];
 }
 
-export const getUserParamValue = (name: string, params: UserParams) => {
+export const getConfigParamValue = (name: string, params: ConfigParams) => {
   let value: string | undefined = undefined;
-  const userParams = params.userParams;
-  for (let i = 0; i < userParams.length; i++) {
-    const userParam = userParams[i];
+  const configParams = params.configParams;
+  for (let i = 0; i < configParams.length; i++) {
+    const configParam = configParams[i];
 
-    if (userParam.name === name && userParam.value) {
-      return userParam.value;
+    if (configParam.name === name && configParam.value) {
+      return configParam.value;
     }
   }
 
