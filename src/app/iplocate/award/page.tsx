@@ -44,7 +44,7 @@ export default function IpLocate() {
       const result = await verifySession(session, awardtoken);
       if (result && result.success) {
         setIsValidSession(true);
-        getUserParams();
+        loadConfig();
         getLocation();
       }
     }
@@ -77,7 +77,7 @@ export default function IpLocate() {
    * Queries AKA Profiles for any saved user-configuration parameters
    * @returns UserParams
    */
-  const getUserParams = async () => {
+  const loadConfig = async () => {
     const config = await getConfig(session!, awardtoken!);
     if (!config) {
       // set to empty to trigger check

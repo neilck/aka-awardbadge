@@ -45,7 +45,7 @@ export const verifySession = async (
   return result as { success: boolean; message: string };
 };
 
-// gets user defined params
+// gets configuration params
 export const getConfig = async (
   session: string,
   awardtoken: string
