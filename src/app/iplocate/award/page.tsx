@@ -12,17 +12,18 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
 import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
-import { ConfigParams, getConfigParamValue } from "@/app/config";
+import { ConfigParam, getConfigParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "../actions/getIpToLocation";
 
 export default function IpLocate() {
   const searchParams = useSearchParams();
   const session = searchParams.get("session");
   const awardtoken = searchParams.get("awardtoken");
+  const identifier = searchParams.get("identifier");
 
   const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
-  const [configParams, setConfigParams] = useState<ConfigParams | undefined>(
+  const [configParams, setConfigParams] = useState<ConfigParam[] | undefined>(
     undefined
   );
   const [country, setCountry] = useState<string | undefined>(undefined);
@@ -78,10 +79,12 @@ export default function IpLocate() {
    * @returns UserParams
    */
   const loadConfig = async () => {
-    const config = await getConfig(session!, awardtoken!);
+    if (!identifier) return;
+
+    const config = await getConfig(identifier);
     if (!config) {
       // set to empty to trigger check
-      setConfigParams({ configParams: [] });
+      setConfigParams(undefined);
       return;
     }
 

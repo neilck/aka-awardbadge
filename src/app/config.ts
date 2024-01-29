@@ -3,13 +3,11 @@ export interface ConfigParam {
   value: string;
 }
 
-export interface ConfigParams {
-  configParams: ConfigParam[];
-}
-
-export const getConfigParamValue = (name: string, params: ConfigParams) => {
+export const getConfigParamValue = (
+  name: string,
+  configParams: ConfigParam[]
+) => {
   let value: string | undefined = undefined;
-  const configParams = params.configParams;
   for (let i = 0; i < configParams.length; i++) {
     const configParam = configParams[i];
 

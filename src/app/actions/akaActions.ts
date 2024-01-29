@@ -2,7 +2,7 @@
 
 import debug from "debug";
 import getErrorMessage from "@/app/errors";
-import { ConfigParams } from "../config";
+import { ConfigParam } from "../config";
 
 const api_key = process.env.AKA_API_KEY;
 const verifySessionURL = process.env.AKA_VERIFY_SESSION_URL;
@@ -47,16 +47,17 @@ export const verifySession = async (
 
 // gets configuration params
 export const getConfig = async (
-  session: string,
-  awardtoken: string
-): Promise<ConfigParams | undefined> => {
+  identifier: string
+): Promise<ConfigParam[] | undefined> => {
   if (!loadConfigURL) {
     error("AKA_LOAD_CONFIG_URL not set");
     throw new Error("AKA_LOAD_CONFIG_URL not set");
   }
-  const result = await postAkaProfiles(loadConfigURL, session, awardtoken);
+
+  const url = `${loadConfigURL}?identifier=${encodeURIComponent(identifier)}`;
+  const result = await getAkaProfiles(url);
   if (result == undefined) return result;
-  return result as ConfigParams;
+  return result as ConfigParam[];
 };
 
 // award badge if eligible during user session
@@ -88,6 +89,33 @@ export const awardBadge = async (
   return result as { success: boolean; badgeAwardId: string };
 };
 
+export const getAkaProfiles = async (
+  url: string
+): Promise<object | undefined> => {
+  log(`getAkaProfiles called url: ${url}`);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: getAuthHeaders(),
+      cache: "no-cache",
+    });
+
+    if (response.status == 200) {
+      const json = await response.json();
+      log(`getAkaProfiles returned ${response.status} ${response.statusText}`);
+      log(`getAkaProfiles returned data ${JSON.stringify(json)}`);
+      return json;
+    } else {
+      error(
+        `getAkaProfiles returned ${response.status} ${response.statusText}`
+      );
+      return undefined;
+    }
+  } catch (myError) {
+    error(`Error during ${url} request: ${getErrorMessage(myError)}`);
+  }
+};
+
 // award badge if eligible during user session
 // session is unique to user
 // awardToken is unique to badge within session
@@ -114,6 +142,7 @@ export const postAkaProfiles = async (
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(postData),
+      cache: "no-cache",
     });
 
     if (response.status == 200) {
