@@ -61,10 +61,9 @@ export default function IpLocate() {
         if (session && awardtoken) {
           // send location data to AKA Profiles in badge award call
           const awardData: any = {};
-          if (location.country_name)
-            awardData.d_country = location.country_name;
-          if (location.state_prov) awardData.d_region = location.state_prov;
-          if (location.city) awardData.d_city = location.city;
+          if (location.country_name) awardData.country = location.country_name;
+          if (location.state_prov) awardData.region = location.state_prov;
+          if (location.city) awardData.city = location.city;
 
           awardBadge(session, awardtoken, awardData);
         }
