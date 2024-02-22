@@ -5,7 +5,14 @@ import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 import { useSearchParams } from "next/navigation";
-import { Alert, AlertTitle, Box, Paper, Typography } from "@mui/material";
+import {
+  Alert,
+  AlertTitle,
+  Box,
+  CircularProgress,
+  Paper,
+  Typography,
+} from "@mui/material";
 import { verifySession, awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./actions/getCaptchaResult";
 
@@ -18,6 +25,7 @@ export default function Notabot() {
   const session = searchParams.get("session");
   const awardtoken = searchParams.get("awardtoken");
 
+  const [isChecking, setIsChecking] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +48,7 @@ export default function Notabot() {
 
   // result of reCaptcha
   const onChangeHandler = async () => {
+    setIsChecking(true);
     if (captchaRef.current) {
       // @ts-ignore
       const token = captchaRef.current.getValue();
@@ -51,12 +60,14 @@ export default function Notabot() {
           const result = await awardBadge(session, awardtoken).catch(
             (posterror) => {
               setError(posterror);
+              setIsChecking(false);
               return;
             }
           );
 
           if (!result) {
             setError("unknown");
+            setIsChecking(false);
             return;
           }
 
@@ -66,6 +77,7 @@ export default function Notabot() {
         }
       }
     }
+    setIsChecking(false);
   };
 
   if (!isValidSession) return <></>;
@@ -109,6 +121,11 @@ export default function Notabot() {
                   size="normal"
                   sitekey={KEY_V2}
                 />
+                {isChecking && (
+                  <Box pt={2}>
+                    <CircularProgress />
+                  </Box>
+                )}
               </>
             )}
             {isAwarded && (
