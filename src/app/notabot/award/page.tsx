@@ -80,7 +80,7 @@ export default function Notabot() {
     setIsChecking(false);
   };
 
-  if (!isValidSession) return <></>;
+  if (!isValidSession) return <>Invalid session.</>;
 
   return (
     <>
