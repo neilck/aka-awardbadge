@@ -38,7 +38,11 @@ export default function Notabot() {
   const checkSession = async () => {
     let isValidSession = false;
     if (session && awardtoken) {
-      const result = await verifySession(session, awardtoken);
+      const result = await verifySession(session, awardtoken).catch((error) => {
+        setError(error);
+        return;
+      });
+
       if (result && result.success) {
         isValidSession = true;
       }
@@ -80,7 +84,7 @@ export default function Notabot() {
     setIsChecking(false);
   };
 
-  if (!isValidSession) return <>Invalid session.</>;
+  if (!isValidSession) return <>Invalid session</>;
 
   return (
     <>
