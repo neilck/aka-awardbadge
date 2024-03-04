@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // ignore useSearchParams error, as pages are client rendered anyways
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
+
   async headers() {
     return [
       {
