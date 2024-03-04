@@ -2,7 +2,7 @@
 
 AKA Profiles supported self-issued badges, where uses can apply for and be awarded badges.
 
-See [AKA Pofiles Documentation](https://docs.akaprofiles.com/docs/API/introduction) for more information.
+See [AKA Pofiles Documentation](https://www.akaprofiles.com/docs/badge-integration/introduction) for more information.
 
 This project is the source code of the existing badges.
 
