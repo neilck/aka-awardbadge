@@ -32,7 +32,7 @@ export const getIpToLocation = async (): Promise<IpLocResult | null> => {
   const url = `https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&ip=${ip}&fields=${fields}`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: "no-cache" });
     const location: Location = await response.json();
     if (location?.message) {
       // return error;

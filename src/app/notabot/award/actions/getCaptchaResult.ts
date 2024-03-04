@@ -5,7 +5,7 @@ export const getCaptchaResult = async (token: string) => {
   const url = `https://www.google.com/recaptcha/api/siteverify?secret=${secret_key}&response=${token}`;
 
   try {
-    const response = await fetch(url, { method: "POST" });
+    const response = await fetch(url, { method: "POST", cache: "no-cache" });
     const google_response = await response.json();
     return google_response;
   } catch (error) {
