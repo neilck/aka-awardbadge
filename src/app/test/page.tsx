@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { verifySession } from "../actions/akaActions";
+import { Button } from "@mui/material";
 const ShowSearchParams = () => {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
@@ -18,12 +19,10 @@ const ShowSearchParams = () => {
 export default function Home() {
   const [isValidSession, setIsValidSession] = useState(false);
 
-  useEffect(() => {
-    checkSession();
-  }, []);
+  useEffect(() => {}, []);
 
   // verifying session lets us know AKA Profiles is making the request
-  const checkSession = async () => {
+  const handleOnClick = async () => {
     const session = "Rg7wDuOnYoOhRuGFUrPL";
     const awardtoken = "aTc3qHMUdUyzrDVMhHR8kc";
 
@@ -44,6 +43,9 @@ export default function Home() {
       <Suspense>
         <ShowSearchParams />
       </Suspense>
+      <Button variant="contained" onClick={handleOnClick}>
+        Verify Session
+      </Button>
       <p>isValidSession: {isValidSession.toString()}</p>
     </>
   );
