@@ -10,7 +10,11 @@ import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-
+import {
+  getConfig,
+  verifySession,
+  awardBadge,
+} from "@/app/component/serverCalls";
 import { ConfigParam, getConfigParamValue } from "@/app/config";
 import { Location } from "@/app/api/ipgeo/route";
 
@@ -41,18 +45,8 @@ export default function IpLocate() {
   const load = async () => {
     if (session && awardtoken) {
       // verifying session lets us know AKA Profiles is making the request
-      const response = await fetch("/api/verifySession", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session: session, awardtoken: awardtoken }),
-        cache: "no-cache",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      const result = await verifySession(session, awardtoken);
+      if (result.success) {
         setIsValidSession(true);
         loadConfig();
         getLocation();
@@ -74,18 +68,7 @@ export default function IpLocate() {
           if (location.state_prov) awardData.region = location.state_prov;
           if (location.city) awardData.city = location.city;
 
-          fetch("/api/awardBadge", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              session: session,
-              awardtoken: awardtoken,
-              awarddate: awardData,
-            }),
-            cache: "no-cache",
-          });
+          awardBadge(session, awardtoken, awardData);
         }
       } else {
         setError(errorMesg);
@@ -100,18 +83,12 @@ export default function IpLocate() {
   const loadConfig = async () => {
     if (!identifier) return;
 
-    const response = await fetch(`/api/getConfig?identifier=${identifier}`, {
-      cache: "no-cache",
-    });
-
-    if (!response || response.status == 403) {
+    const config = await getConfig(identifier);
+    if (!config) {
       // set to empty to trigger check
       setConfigParams(undefined);
       return;
     }
-
-    const data = await response.json();
-    const config = data.config;
 
     setConfigParams(config);
     if (config) {

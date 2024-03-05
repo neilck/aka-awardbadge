@@ -13,6 +13,7 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
+import { verifySession, awardBadge } from "@/app/component/serverCalls";
 
 export default function Notabot() {
   const KEY_V2 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V2!;
@@ -36,18 +37,8 @@ export default function Notabot() {
   const checkSession = async () => {
     let isValidSession = false;
     if (session && awardtoken) {
-      const response = await fetch("/api/verifySession", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ session: session, awardtoken: awardtoken }),
-        cache: "no-cache",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
+      const result = await verifySession(session, awardtoken);
+      if (result.success) {
         isValidSession = true;
       }
     }
@@ -68,25 +59,21 @@ export default function Notabot() {
       if (google_response.success) {
         // award badge is successful
         if (session && awardtoken) {
-          const response = await fetch("/api/awardBadge", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ session: session, awardtoken: awardtoken }),
-            cache: "no-cache",
-          });
+          const result = await awardBadge(session, awardtoken).catch(
+            (posterror) => {
+              setError(posterror);
+              setIsChecking(false);
+              return;
+            }
+          );
 
-          if (!response) {
-            setError("no response from awardBadge");
+          if (!result) {
+            setError("unknown");
             setIsChecking(false);
             return;
           }
 
-          const data = await response.json();
-          const success = data?.success ?? "";
-
-          if (success) {
+          if (result.success) {
             setIsAwarded(true);
           }
         }
