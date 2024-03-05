@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { verifySession } from "../actions/akaActions";
+import { incrementLike, verifySession } from "../actions/akaActions";
 import { Button } from "@mui/material";
 const ShowSearchParams = () => {
   const searchParams = useSearchParams();
@@ -37,6 +37,8 @@ export default function Home() {
     }
   };
 
+  const [likes, setLikes] = useState({ initialLikes: 1 });
+
   return (
     <>
       Test Page
@@ -47,6 +49,14 @@ export default function Home() {
         Verify Session
       </Button>
       <p>isValidSession: {isValidSession.toString()}</p>
+      <button
+        onClick={async () => {
+          const updatedLikes = await incrementLike();
+          setLikes(updatedLikes);
+        }}
+      >
+        Likes {likes.initialLikes}
+      </button>
     </>
   );
 }
