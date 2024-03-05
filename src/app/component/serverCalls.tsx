@@ -16,6 +16,7 @@ export const verifySession = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.NEXT_PUBLIC_APP_TOKEN}`,
       },
       body: JSON.stringify({ session: session, awardtoken: awardtoken }),
       cache: "no-cache",
@@ -32,6 +33,9 @@ export const verifySession = async (
 // gets configuration params
 export const getConfig = async (identifier: string): Promise<ConfigParam[]> => {
   const response = await fetch(`/api/getConfig?identifier=${identifier}`, {
+    headers: {
+      "Authorization": `Bearer ${process.env.NEXT_PUBLIC_APP_TOKEN}`,
+    },
     cache: "no-cache",
   });
 
@@ -55,6 +59,7 @@ export const awardBadge = async (
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.NEXT_PUBLIC_APP_TOKEN}`,
     },
     body: JSON.stringify({
       session: session,
