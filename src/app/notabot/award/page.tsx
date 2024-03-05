@@ -76,13 +76,15 @@ export default function Notabot() {
           });
 
           if (!response) {
-            setError("unknown");
+            setError("no response from awardBadge");
             setIsChecking(false);
             return;
           }
 
           const data = await response.json();
-          if (data.success) {
+          const success = data?.success ?? "";
+
+          if (success) {
             setIsAwarded(true);
           }
         }
