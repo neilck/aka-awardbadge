@@ -61,7 +61,10 @@ export default function Notabot() {
     if (captchaRef.current) {
       // @ts-ignore
       const token = captchaRef.current.getValue();
-      const google_response = await getCaptchaResult(token);
+      const url = `/api/siteverify?token=${token}`;
+      const verifyResponse = await fetch(url);
+
+      const google_response = await verifyResponse.json();
 
       if (google_response.success) {
         // award badge is successful

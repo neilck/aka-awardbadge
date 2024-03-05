@@ -1,5 +1,4 @@
 import { getConfig } from "@/app/actions/akaActions";
-import { verify } from "crypto";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
