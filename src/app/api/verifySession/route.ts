@@ -6,13 +6,15 @@ export async function GET(request: Request) {
   const session = searchParams.get("session");
   const awardtoken = searchParams.get("awardtoken");
 
+  let data = { success: false, message: "missing parameters" };
   if (!session || !awardtoken) {
-    return { success: false, message: "missing parameters" };
+    return Response.json(data);
   }
 
   const result = await verifySession(session, awardtoken);
   if (!result) {
-    return { success: false, message: "undefined" };
+    data = { success: false, message: "undefined" };
+    return Response.json(data);
   }
   return Response.json(result);
 }
