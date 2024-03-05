@@ -3,16 +3,13 @@ const nextConfig = {
   // ignore useSearchParams error, as pages are client rendered anyways
   experimental: {
     missingSuspenseWithCSRBailout: false,
-    serverActions: {
-      allowedOrigins: ["badges.akaprofiles.com"],
-    },
   },
 
   async headers() {
     return [
       {
-        // matching all  routes
-        source: "/:path*",
+        // matching all API routes
+        source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
           { key: "Access-Control-Allow-Origin", value: "*" }, // replace this your actual origin
