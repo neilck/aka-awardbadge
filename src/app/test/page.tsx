@@ -17,24 +17,18 @@ const ShowSearchParams = () => {
 };
 
 export default function Home() {
-  const [isValidSession, setIsValidSession] = useState(false);
-
-  useEffect(() => {}, []);
+  const [result, setResult] = useState({ success: false, message: "initial" });
 
   // verifying session lets us know AKA Profiles is making the request
   const handleOnClick = async () => {
     const session = "Rg7wDuOnYoOhRuGFUrPL";
     const awardtoken = "aTc3qHMUdUyzrDVMhHR8kc";
 
-    const result = await verifySession(session, awardtoken).catch((error) => {
-      console.log(error);
-      return;
-    });
-
-    console.log(result);
-    if (result) {
-      setIsValidSession(result.success);
-    }
+    const response = await fetch(
+      `/api/verifySession?session=${session}&awardtoken=${awardtoken}`
+    );
+    const data = await response.json();
+    setResult(data);
   };
 
   const [likes, setLikes] = useState({ initialLikes: 1 });
@@ -48,15 +42,7 @@ export default function Home() {
       <Button variant="contained" onClick={handleOnClick}>
         Verify Session
       </Button>
-      <p>isValidSession: {isValidSession.toString()}</p>
-      <button
-        onClick={async () => {
-          const updatedLikes = await incrementLike();
-          setLikes(updatedLikes);
-        }}
-      >
-        Likes {likes.initialLikes}
-      </button>
+      <p>isValidSession: {JSON.stringify(result)}</p>
     </>
   );
 }
