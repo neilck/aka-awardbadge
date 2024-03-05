@@ -10,7 +10,7 @@ To create your own self-hosted badge, you can submit a pull request, or clone th
 
 - src/app/notabot: Uses Captcha to award a "Not-a-bot" badge.
 - src/app/iplocate: Uses IP Geolocation badge to determine location. Loads user-defined params and returns data fields
-- src/app.actions: calls to AKA Profiles API to award badge or load configuration options
+- src/components/serverCalls.tsx: client to server calls to verify session, load configuration, or award badge
 
 ```html
 <iframe

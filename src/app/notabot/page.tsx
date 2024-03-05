@@ -124,7 +124,7 @@ export default function Notabot() {
                   sitekey={KEY_V2}
                 />
                 {isChecking && (
-                  <Box pt={2}>
+                  <Box pt={3}>
                     <CircularProgress />
                   </Box>
                 )}
