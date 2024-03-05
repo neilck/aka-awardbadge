@@ -100,16 +100,11 @@ export default function IpLocate() {
   const loadConfig = async () => {
     if (!identifier) return;
 
-    const response = await fetch("/api/getConfig", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ identifier: identifier }),
+    const response = await fetch(`/api/getConfig?identifier=${identifier}`, {
       cache: "no-cache",
     });
 
-    if (!response) {
+    if (!response || response.status == 403) {
       // set to empty to trigger check
       setConfigParams(undefined);
       return;

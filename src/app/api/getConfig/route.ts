@@ -5,9 +5,13 @@ export async function GET(request: Request) {
   const identifier = searchParams.get("identifier");
 
   if (!identifier) {
-    return Response.json(undefined);
+    return Response.json(
+      { mesg: "missing identifier parameter" },
+      { status: 400 }
+    );
   }
 
   const result = await getConfig(identifier);
-  return Response.json(result);
+  if (result) return Response.json(result);
+  else return Response.json({ mesg: "not found" }, { status: 404 });
 }
