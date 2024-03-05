@@ -3,6 +3,9 @@ const nextConfig = {
   // ignore useSearchParams error, as pages are client rendered anyways
   experimental: {
     missingSuspenseWithCSRBailout: false,
+    serverActions: {
+      allowedOrigins: ["badges.akaprofiles.com"],
+    },
   },
 
   async headers() {
