@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { incrementLike, verifySession } from "../actions/akaActions";
 import { Button } from "@mui/material";
 const ShowSearchParams = () => {
   const searchParams = useSearchParams();
@@ -24,14 +23,19 @@ export default function Home() {
     const session = "Rg7wDuOnYoOhRuGFUrPL";
     const awardtoken = "aTc3qHMUdUyzrDVMhHR8kc";
 
-    const response = await fetch(
-      `/api/verifySession?session=${session}&awardtoken=${awardtoken}`
-    );
+    const response = await fetch("/api/verifySession", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session: session, awardtoken: awardtoken }),
+      cache: "no-cache",
+    });
+
     const data = await response.json();
+    console.log(data);
     setResult(data);
   };
-
-  const [likes, setLikes] = useState({ initialLikes: 1 });
 
   return (
     <>

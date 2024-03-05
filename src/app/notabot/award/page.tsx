@@ -38,12 +38,18 @@ export default function Notabot() {
   const checkSession = async () => {
     let isValidSession = false;
     if (session && awardtoken) {
-      const result = await verifySession(session, awardtoken).catch((error) => {
-        setError(error);
-        return;
+      const response = await fetch("/api/verifySession", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session: session, awardtoken: awardtoken }),
+        cache: "no-cache",
       });
 
-      if (result && result.success) {
+      const data = await response.json();
+
+      if (data.success) {
         isValidSession = true;
       }
     }
@@ -61,21 +67,32 @@ export default function Notabot() {
       if (google_response.success) {
         // award badge is successful
         if (session && awardtoken) {
+          /*
           const result = await awardBadge(session, awardtoken).catch(
             (posterror) => {
               setError(posterror);
               setIsChecking(false);
               return;
             }
-          );
+          );*/
 
-          if (!result) {
+          const response = await fetch("/api/awardBadge", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ session: session, awardtoken: awardtoken }),
+            cache: "no-cache",
+          });
+
+          if (!response) {
             setError("unknown");
             setIsChecking(false);
             return;
           }
 
-          if (result.success) {
+          const data = await response.json();
+          if (data.success) {
             setIsAwarded(true);
           }
         }
