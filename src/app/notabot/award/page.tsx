@@ -13,7 +13,6 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { getCaptchaResult } from "./actions/getCaptchaResult";
 
 export default function Notabot() {
   const KEY_V2 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V2!;

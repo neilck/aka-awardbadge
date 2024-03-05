@@ -12,7 +12,7 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
 import { ConfigParam, getConfigParamValue } from "@/app/config";
-import { Location, getIpToLocation } from "../actions/getIpToLocation";
+import { Location } from "@/app/api/ipgeo/route";
 
 export default function IpLocate() {
   const searchParams = useSearchParams();
@@ -58,17 +58,6 @@ export default function IpLocate() {
         getLocation();
       }
     }
-  };
-
-  const awardBadge = async () => {
-    const response = await fetch("/api/awardBadge", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session: session, awardtoken: awardtoken }),
-      cache: "no-cache",
-    });
   };
 
   useEffect(() => {
@@ -156,13 +145,18 @@ export default function IpLocate() {
    * @returns IpLocResult
    */
   const getLocation = async () => {
-    const result = await getIpToLocation();
+    const response = await fetch("/api/ipgeo", {
+      method: "GET",
+      cache: "no-cache",
+    });
 
-    if (result != null) setLocation(result.location);
-    if (result?.message) {
-      setError(result.message);
+    const data = await response.json();
+
+    if (data != null) setLocation(data.location);
+    if (data?.message) {
+      setError(data.message);
     }
-    return result;
+    return data;
   };
 
   /**

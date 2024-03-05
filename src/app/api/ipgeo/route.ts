@@ -13,13 +13,7 @@ export type Location = {
   "message"?: string; // message on error
 } | null;
 
-export type IpLocResult = {
-  success: boolean;
-  message?: string;
-  location?: Location;
-};
-
-export const getIpToLocation = async (): Promise<IpLocResult | null> => {
+export async function GET(request: Request) {
   const apiKey = process.env.IPGEOLOCATION_KEY;
 
   const ip = headers().get("x-forwarded-for"); // "75.155.176.254"
@@ -36,12 +30,16 @@ export const getIpToLocation = async (): Promise<IpLocResult | null> => {
     const location: Location = await response.json();
     if (location?.message) {
       // return error;
-      return { success: false, message: location.message };
+      return Response.json({ success: false, message: location.message });
     }
 
-    return { success: true, location: location };
+    return Response.json({ success: true, location: location });
   } catch (error) {
     console.error(`Error during ${url} request:`, error);
-    return { success: false, message: getErrorMessage(error), location: null };
+    return Response.json({
+      success: false,
+      message: getErrorMessage(error),
+      location: null,
+    });
   }
-};
+}
