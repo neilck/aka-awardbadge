@@ -11,7 +11,6 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
-import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
 import { ConfigParam, getConfigParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "../actions/getIpToLocation";
 
@@ -42,13 +41,34 @@ export default function IpLocate() {
   const load = async () => {
     if (session && awardtoken) {
       // verifying session lets us know AKA Profiles is making the request
-      const result = await verifySession(session, awardtoken);
-      if (result && result.success) {
+      const response = await fetch("/api/verifySession", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session: session, awardtoken: awardtoken }),
+        cache: "no-cache",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
         setIsValidSession(true);
         loadConfig();
         getLocation();
       }
     }
+  };
+
+  const awardBadge = async () => {
+    const response = await fetch("/api/awardBadge", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ session: session, awardtoken: awardtoken }),
+      cache: "no-cache",
+    });
   };
 
   useEffect(() => {
@@ -65,7 +85,18 @@ export default function IpLocate() {
           if (location.state_prov) awardData.region = location.state_prov;
           if (location.city) awardData.city = location.city;
 
-          awardBadge(session, awardtoken, awardData);
+          fetch("/api/awardBadge", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              session: session,
+              awardtoken: awardtoken,
+              awarddate: awardData,
+            }),
+            cache: "no-cache",
+          });
         }
       } else {
         setError(errorMesg);
@@ -80,12 +111,23 @@ export default function IpLocate() {
   const loadConfig = async () => {
     if (!identifier) return;
 
-    const config = await getConfig(identifier);
-    if (!config) {
+    const response = await fetch("/api/getConfig", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ identifier: identifier }),
+      cache: "no-cache",
+    });
+
+    if (!response) {
       // set to empty to trigger check
       setConfigParams(undefined);
       return;
     }
+
+    const data = await response.json();
+    const config = data.config;
 
     setConfigParams(config);
     if (config) {

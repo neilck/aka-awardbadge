@@ -13,7 +13,6 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { verifySession, awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./actions/getCaptchaResult";
 
 export default function Notabot() {
@@ -26,7 +25,7 @@ export default function Notabot() {
   const awardtoken = searchParams.get("awardtoken");
 
   const [isChecking, setIsChecking] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
+  const [isValidSession, setIsValidSession] = useState(true);
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
 
@@ -67,15 +66,6 @@ export default function Notabot() {
       if (google_response.success) {
         // award badge is successful
         if (session && awardtoken) {
-          /*
-          const result = await awardBadge(session, awardtoken).catch(
-            (posterror) => {
-              setError(posterror);
-              setIsChecking(false);
-              return;
-            }
-          );*/
-
           const response = await fetch("/api/awardBadge", {
             method: "POST",
             headers: {
