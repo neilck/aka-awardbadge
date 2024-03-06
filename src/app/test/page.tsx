@@ -6,6 +6,7 @@ export default function Page() {
   const [value, setValue] = useState(1);
   const [isGreater, setIsGreater] = useState(false);
 
+  /*
   useEffect(() => {
     const doSomething = async () => {
       const isGreater = await greaterThan10(value);
@@ -14,6 +15,7 @@ export default function Page() {
 
     doSomething();
   }, [value]);
+  */
 
   return (
     <>
