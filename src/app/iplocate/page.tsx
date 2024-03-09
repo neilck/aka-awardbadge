@@ -10,13 +10,10 @@ import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import {
-  getConfig,
-  verifySession,
-  awardBadge,
-} from "@/app/component/serverCalls";
+
+import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
 import { ConfigParam, getConfigParamValue } from "@/app/config";
-import { Location } from "@/app/api/ipgeo/route";
+import { Location, getIpToLocation } from "./serverActions";
 
 export default function IpLocate() {
   const searchParams = useSearchParams();
@@ -46,7 +43,7 @@ export default function IpLocate() {
     if (session && awardtoken) {
       // verifying session lets us know AKA Profiles is making the request
       const result = await verifySession(session, awardtoken);
-      if (result.success) {
+      if (result && result.success) {
         setIsValidSession(true);
         loadConfig();
         getLocation();
@@ -117,18 +114,13 @@ export default function IpLocate() {
    * @returns IpLocResult
    */
   const getLocation = async () => {
-    const response = await fetch("/api/ipgeo", {
-      method: "GET",
-      cache: "no-cache",
-    });
+    const result = await getIpToLocation();
 
-    const data = await response.json();
-
-    if (data != null) setLocation(data.location);
-    if (data?.message) {
-      setError(data.message);
+    if (result != null) setLocation(result.location);
+    if (result?.message) {
+      setError(result.message);
     }
-    return data;
+    return result;
   };
 
   /**

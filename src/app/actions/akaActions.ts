@@ -160,7 +160,3 @@ export const postAkaProfiles = async (
     error(`Error during ${url} request: ${getErrorMessage(myError)}`);
   }
 };
-
-export const incrementLike = async () => {
-  return { initialLikes: 2 };
-};

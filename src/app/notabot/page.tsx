@@ -13,7 +13,8 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { verifySession, awardBadge } from "@/app/component/serverCalls";
+import { verifySession, awardBadge } from "@/app/actions/akaActions";
+import { getCaptchaResult } from "./serverActions";
 
 export default function Notabot() {
   const KEY_V2 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V2!;
@@ -38,7 +39,7 @@ export default function Notabot() {
     let isValidSession = false;
     if (session && awardtoken) {
       const result = await verifySession(session, awardtoken);
-      if (result.success) {
+      if (result && result.success) {
         isValidSession = true;
       }
     }
@@ -51,10 +52,7 @@ export default function Notabot() {
     if (captchaRef.current) {
       // @ts-ignore
       const token = captchaRef.current.getValue();
-      const url = `/api/siteverify?token=${token}`;
-      const verifyResponse = await fetch(url);
-
-      const google_response = await verifyResponse.json();
+      const google_response = await getCaptchaResult(token);
 
       if (google_response.success) {
         // award badge is successful
