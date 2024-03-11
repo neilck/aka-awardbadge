@@ -2,9 +2,32 @@
 
 import debug from "debug";
 import getErrorMessage from "@/app/errors";
+import * as jwt from "jsonwebtoken";
+
 import { ConfigParam } from "../config";
 
+declare module "jsonwebtoken" {
+  export interface JwtPayload {
+    session: string;
+    target: string;
+    owner: string;
+    configParams: ConfigParam[];
+  }
+}
+
+const akaPublicKey = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxij5eYQKBiWppELmT5OY
+6fkfaS61ZetXDuDOpGi5VJavbgNKkUzBK9msqwgEWC8Qsj259ZuwvEYrF5i/ir7v
+hQ19p1N+VTx9LjNFKMKdUEDYswpae3oHKXAib871IzwY6LbaJlAIXMzH0XGZ6TaA
+PDvq0W88JmCE+5VRisTVGRqMU5RXR8EddKgY4XvO6xQyEADceJKtlhc0MfMY9RAB
+9hVTp69iyM11mIiEZupyzzGx1LL8evJT6xyD0D+Ao/qJmnRxVjWo7x2Q+4IJgVcA
+XG75DqyKPdYgqv3aMb4gLzJC8I0ds7H85bWxmi4ggKIZmhKphH6riu6HDPwMmw1T
+DwIDAQAB
+-----END PUBLIC KEY-----
+`;
+
 const api_key = process.env.AKA_API_KEY;
+const tokenURL = process.env.AKA_TOKEN_URL;
 const verifySessionURL = process.env.AKA_VERIFY_SESSION_URL;
 const loadConfigURL = process.env.AKA_LOAD_CONFIG_URL;
 const awardBadgeURL = process.env.AKA_AWARD_BADGE_URL;
@@ -12,18 +35,26 @@ const awardBadgeURL = process.env.AKA_AWARD_BADGE_URL;
 const log = debug("akaActions:log");
 const error = debug("akaActions:error");
 
-interface AkaPostData {
-  session: string;
-  awardtoken: string;
-  awarddata?: object;
+declare module "jsonwebtoken" {
+  export interface JwtPayload {
+    session: string;
+    target: string;
+    owner: string;
+    configParams: ConfigParam[];
+  }
 }
 
-// return header with AKA_API_KEY authorization
-const getAuthHeaders = () => {
-  if (!api_key) {
-    throw new Error("AKA_API_KEY not set.");
+// return header with AKA_API_KEY or token authorization
+const getAuthHeaders = (token?: string) => {
+  let authorization = "";
+  if (token) {
+    authorization = `Bearer ${token}`;
+  } else {
+    if (!api_key) {
+      throw new Error("AKA_API_KEY not set.");
+    }
+    authorization = `Bearer ${api_key}`;
   }
-  const authorization = `Bearer ${api_key}`;
 
   return {
     "Content-Type": "application/json",
@@ -32,67 +63,19 @@ const getAuthHeaders = () => {
 };
 
 // verify valid session
-export const verifySession = async (
-  session: string,
-  awardtoken: string
-): Promise<{ success: boolean; message: string } | undefined> => {
-  if (!verifySessionURL) {
-    error("AKA_VERIFY_SESSION_URL not set");
-    throw new Error("AKA_VERIFY_SESSION_URL not set");
+export const token = async (
+  code: string
+): Promise<{ token?: string; payload?: jwt.JwtPayload; error?: string }> => {
+  if (!tokenURL) {
+    error("AKA_TOKEN_URL not set");
+    throw new Error("AKA_TOKEN_URL not set");
   }
 
-  const result = await postAkaProfiles(verifySessionURL, session, awardtoken);
-  return result as { success: boolean; message: string };
-};
+  const url = `${tokenURL}?code=${code}`;
 
-// gets configuration params
-export const getConfig = async (
-  identifier: string
-): Promise<ConfigParam[] | undefined> => {
-  if (!loadConfigURL) {
-    error("AKA_LOAD_CONFIG_URL not set");
-    throw new Error("AKA_LOAD_CONFIG_URL not set");
-  }
+  let token = "";
+  let tokenError = "";
 
-  const url = `${loadConfigURL}?identifier=${encodeURIComponent(identifier)}`;
-  const result = await getAkaProfiles(url);
-  if (result == undefined) return result;
-  return result as ConfigParam[];
-};
-
-// award badge if eligible during user session
-// session is unique to user
-// awardToken is unique to badge within session
-export const awardBadge = async (
-  session: string,
-  awardtoken: string,
-  awarddata?: object
-): Promise<{ success: boolean; badgeAwardId: string } | undefined> => {
-  if (!awardBadgeURL) {
-    error("AKA_AWARD_BADGE_URL not set");
-    throw new Error("AKA_AWARD_BADGE_URL not set");
-  }
-
-  let result: any = undefined;
-  if (!awarddata) {
-    result = await postAkaProfiles(awardBadgeURL, session, awardtoken);
-  } else {
-    result = await postAkaProfiles(
-      awardBadgeURL,
-      session,
-      awardtoken,
-      awarddata
-    );
-  }
-  if (result === undefined) return result;
-
-  return result as { success: boolean; badgeAwardId: string };
-};
-
-export const getAkaProfiles = async (
-  url: string
-): Promise<object | undefined> => {
-  log(`getAkaProfiles called url: ${url}`);
   try {
     const response = await fetch(url, {
       method: "GET",
@@ -100,20 +83,57 @@ export const getAkaProfiles = async (
       cache: "no-cache",
     });
 
+    const text = await response.text();
     if (response.status == 200) {
-      const json = await response.json();
-      log(`getAkaProfiles returned ${response.status} ${response.statusText}`);
-      log(`getAkaProfiles returned data ${JSON.stringify(json)}`);
-      return json;
+      token = text;
     } else {
-      error(
-        `getAkaProfiles returned ${response.status} ${response.statusText}`
-      );
-      return undefined;
+      tokenError = text;
     }
   } catch (myError) {
-    error(`Error during ${url} request: ${getErrorMessage(myError)}`);
+    throw new Error(
+      `Error during ${url} request.  ${getErrorMessage(myError)}`
+    );
   }
+
+  if (tokenError != "") {
+    return { error: tokenError };
+  }
+
+  // decode token
+  try {
+    const decoded = jwt.verify(token, akaPublicKey);
+    if (typeof decoded === "string") {
+      debug("token is string instead of JwtPayload");
+      return { error: "unauthorized" };
+    }
+    return { token: token, payload: decoded };
+  } catch (myError) {
+    throw new Error(
+      `Error decoding token ${token}.  ${getErrorMessage(myError)}`
+    );
+  }
+};
+
+// award badge if eligible during user session
+// session is unique to user
+// awardToken is unique to badge within session
+export const awardBadge = async (
+  token: string,
+  awarddata?: object
+): Promise<{ success: boolean; badgeAwardId: string } | undefined> => {
+  if (!awardBadgeURL) {
+    error("AKA_AWARD_BADGE_URL not set");
+    throw new Error("AKA_AWARD_BADGE_URL not set");
+  }
+
+  const result = await postAkaProfiles(
+    awardBadgeURL,
+    token,
+    awarddata ? awarddata : {}
+  );
+  if (result === undefined) return result;
+
+  return result as { success: boolean; badgeAwardId: string };
 };
 
 // award badge if eligible during user session
@@ -121,27 +141,15 @@ export const getAkaProfiles = async (
 // awardToken is unique to badge within session
 export const postAkaProfiles = async (
   url: string,
-  session: string,
-  awardtoken: string,
-  awarddata?: object
+  token: string,
+  data: object
 ): Promise<object | undefined> => {
-  log(
-    `postAkaProfiles called session: ${session}, awardtoken: ${awardtoken}, awarddata: ${awarddata} url: ${url}`
-  );
+  log(`postAkaProfiles called token: ${token}, data: ${data} url: ${url}`);
   try {
-    const postData: AkaPostData = {
-      session: session,
-      awardtoken: awardtoken,
-    };
-
-    if (awarddata) {
-      postData.awarddata = awarddata;
-    }
-
     const response = await fetch(url, {
       method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(postData),
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
       cache: "no-cache",
     });
 

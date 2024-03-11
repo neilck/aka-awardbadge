@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Head from "next/head";
-import { useSearchParams } from "next/navigation";
 
 import Grid from "@mui/material/Grid";
 import Alert from "@mui/material/Alert";
@@ -11,21 +10,21 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
-import { verifySession, awardBadge, getConfig } from "@/app/actions/akaActions";
+import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { ConfigParam, getConfigParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "./serverActions";
 
 export default function IpLocate() {
-  const searchParams = useSearchParams();
-  const session = searchParams.get("session");
-  const awardtoken = searchParams.get("awardtoken");
-  const identifier = searchParams.get("identifier");
+  let code = "";
+  if (typeof window !== "undefined") {
+    const queryParameters = new URLSearchParams(window.location.search);
+    code = queryParameters.get("code") ?? "";
+  }
 
+  const [token, setToken] = useState("");
   const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
-  const [configParams, setConfigParams] = useState<ConfigParam[] | undefined>(
-    undefined
-  );
+  const [configParams, setConfigParams] = useState<ConfigParam[]>([]);
   const [country, setCountry] = useState<string | undefined>(undefined);
   const [state, setState] = useState<string | undefined>(undefined);
   const [city, setCity] = useState<string | undefined>(undefined);
@@ -36,92 +35,75 @@ export default function IpLocate() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const load = async () => {
+      if (code == "") {
+        setIsValidSession(false);
+        return;
+      }
+
+      const result = await getToken(code);
+
+      if (result.error || !result.token) {
+        setIsValidSession(false);
+        return;
+      }
+
+      setToken(result.token);
+      setIsValidSession(true);
+
+      // load config
+      if (result.payload && result.payload.configParams) {
+        const config = result.payload.configParams;
+        setConfigParams(config);
+        const country = getConfigParamValue("Country", config);
+        if (country != "") setCountry(country);
+        const state = getConfigParamValue("State/Prov", config);
+        if (state != "") setState(state);
+        const city = getConfigParamValue("City", config);
+        if (city != "") setCity(city);
+
+        if (country || state || city) {
+          let loc = "";
+          if (city) loc = ` ${loc} ${city},`;
+          if (state) loc = ` ${loc} ${state},`;
+          if (country) loc = ` ${loc} ${country}.`;
+          setSuccessMesg(`Verified in location${loc}`);
+          setErrorMesg(`Not in ${loc}`);
+        }
+      }
+
+      // get location
+      const locResult = await getIpToLocation();
+      if (locResult != null) setLocation(locResult.location);
+      if (locResult?.message) {
+        setError(locResult.message);
+      }
+    };
+
     load();
   }, []);
 
-  const load = async () => {
-    if (session && awardtoken) {
-      // verifying session lets us know AKA Profiles is making the request
-      const result = await verifySession(session, awardtoken);
-      if (result && result.success) {
-        setIsValidSession(true);
-        loadConfig();
-        getLocation();
-      }
-    }
-  };
-
   useEffect(() => {
-    if (configParams && location) {
+    if (configParams.length > 0 && location) {
       const matches = checkLocation(location);
       if (matches) {
         // award badge is current location matches user-defined parameters
         setSuccess(successMesg);
 
-        if (session && awardtoken) {
+        if (token != "") {
           // send location data to AKA Profiles in badge award call
           const awardData: any = {};
           if (location.country_name) awardData.country = location.country_name;
           if (location.state_prov) awardData.region = location.state_prov;
           if (location.city) awardData.city = location.city;
 
-          awardBadge(session, awardtoken, awardData);
+          awardBadge(token, awardData);
         }
       } else {
         setError(errorMesg);
       }
     }
   }, [configParams, location]);
-
-  /**
-   * Queries AKA Profiles for any saved user-configuration parameters
-   * @returns UserParams
-   */
-  const loadConfig = async () => {
-    if (!identifier) return;
-
-    const config = await getConfig(identifier);
-    if (!config) {
-      // set to empty to trigger check
-      setConfigParams(undefined);
-      return;
-    }
-
-    setConfigParams(config);
-    if (config) {
-      const country = getConfigParamValue("Country", config);
-      if (country != "") setCountry(country);
-      const state = getConfigParamValue("State/Prov", config);
-      if (state != "") setState(state);
-      const city = getConfigParamValue("City", config);
-      if (city != "") setCity(city);
-
-      if (country || state || city) {
-        let loc = "";
-        if (city) loc = ` ${loc} ${city},`;
-        if (state) loc = ` ${loc} ${state},`;
-        if (country) loc = ` ${loc} ${country}.`;
-        setSuccessMesg(`Verified in location${loc}`);
-        setErrorMesg(`Not in ${loc}`);
-      }
-    }
-
-    return config;
-  };
-
-  /**
-   * Get geo location based on IP Address
-   * @returns IpLocResult
-   */
-  const getLocation = async () => {
-    const result = await getIpToLocation();
-
-    if (result != null) setLocation(result.location);
-    if (result?.message) {
-      setError(result.message);
-    }
-    return result;
-  };
 
   /**
    * If user-defined parameters specifies match values, determine if matches

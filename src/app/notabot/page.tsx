@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
-import { useSearchParams } from "next/navigation";
 import {
   Alert,
   AlertTitle,
@@ -13,7 +12,7 @@ import {
   Paper,
   Typography,
 } from "@mui/material";
-import { verifySession, awardBadge } from "@/app/actions/akaActions";
+import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./serverActions";
 
 export default function Notabot() {
@@ -21,49 +20,62 @@ export default function Notabot() {
   const KEY_V3 = process.env.NEXT_PUBLIC_RECAPTCHA_SITEKEY_V3!;
 
   const captchaRef = useRef(null);
-  const searchParams = useSearchParams();
-  const session = searchParams.get("session");
-  const awardtoken = searchParams.get("awardtoken");
+  let code = "";
+  if (typeof window !== "undefined") {
+    const queryParameters = new URLSearchParams(window.location.search);
+    code = queryParameters.get("code") ?? "";
+  }
 
+  const [token, setToken] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [isValidSession, setIsValidSession] = useState(true);
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const checkSession = async () => {
+      if (code == "") {
+        setIsValidSession(false);
+        return;
+      }
+
+      const result = await getToken(code);
+
+      if (result.error) {
+        console.log(`Error verifying token: ${result.error}`);
+        setIsValidSession(false);
+        return;
+      }
+
+      if (!result.token) {
+        console.log(`Token missing from response.`);
+        setIsValidSession(false);
+        return;
+      }
+
+      setToken(result.token);
+      setIsValidSession(true);
+    };
+
     checkSession();
   }, []);
-
-  // verifying session lets us know AKA Profiles is making the request
-  const checkSession = async () => {
-    let isValidSession = false;
-    if (session && awardtoken) {
-      const result = await verifySession(session, awardtoken);
-      if (result && result.success) {
-        isValidSession = true;
-      }
-    }
-    setIsValidSession(isValidSession);
-  };
 
   // result of reCaptcha
   const onChangeHandler = async () => {
     setIsChecking(true);
     if (captchaRef.current) {
       // @ts-ignore
-      const token = captchaRef.current.getValue();
-      const google_response = await getCaptchaResult(token);
+      const captchaToken = captchaRef.current.getValue();
+      const google_response = await getCaptchaResult(captchaToken);
 
       if (google_response.success) {
         // award badge is successful
-        if (session && awardtoken) {
-          const result = await awardBadge(session, awardtoken).catch(
-            (posterror) => {
-              setError(posterror);
-              setIsChecking(false);
-              return;
-            }
-          );
+        if (token != "") {
+          const result = await awardBadge(token).catch((posterror) => {
+            setError(posterror);
+            setIsChecking(false);
+            return;
+          });
 
           if (!result) {
             setError("unknown");
