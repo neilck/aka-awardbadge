@@ -15,7 +15,7 @@ To create your own self-hosted badge, you can submit a pull request, or clone th
 ```html
 <iframe
 id="contentFrame"
-src="<applyURL>?session=$<session id>&awardtoken=<award token>"
+src="<applyURL>?code=<code>"
 title={title}
 style={{
     height: "100%",
