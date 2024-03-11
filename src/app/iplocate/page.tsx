@@ -24,6 +24,7 @@ export default function IpLocate() {
   const [token, setToken] = useState("");
   const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [configParams, setConfigParams] = useState<ConfigParam[]>([]);
   const [country, setCountry] = useState<string | undefined>(undefined);
   const [state, setState] = useState<string | undefined>(undefined);
@@ -71,6 +72,7 @@ export default function IpLocate() {
           setErrorMesg(`Not in ${loc}`);
         }
       }
+      setConfigLoaded(true);
 
       // get location
       const locResult = await getIpToLocation();
@@ -84,7 +86,7 @@ export default function IpLocate() {
   }, []);
 
   useEffect(() => {
-    if (configParams.length > 0 && location) {
+    if (configLoaded && location) {
       const matches = checkLocation(location);
       if (matches) {
         // award badge is current location matches user-defined parameters
@@ -103,7 +105,7 @@ export default function IpLocate() {
         setError(errorMesg);
       }
     }
-  }, [configParams, location]);
+  }, [configLoaded, location]);
 
   /**
    * If user-defined parameters specifies match values, determine if matches
