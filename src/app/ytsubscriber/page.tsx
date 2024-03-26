@@ -92,6 +92,7 @@ export default function AddYtSubscriberBadge() {
       setError(undefined);
       setNotVerifiedMesg(undefined);
 
+      console.log(`checking for session ${JSON.stringify(session)}`);
       if (
         !session ||
         !channelInfo ||
@@ -99,6 +100,9 @@ export default function AddYtSubscriberBadge() {
         session.accessToken == ""
       ) {
         setError("Account not available.");
+
+        const session2 = useSession();
+        console.log(`2nd check for session ${JSON.stringify(session2)}`);
         return;
       }
 
