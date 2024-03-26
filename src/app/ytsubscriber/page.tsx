@@ -32,7 +32,7 @@ export default function AddYtSubscriberBadge() {
     redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
-  const session = useSession().data;
+  const session = useSessionResult.data;
   const loggedIn = session != null;
 
   const [token, setToken] = useState("");
@@ -92,7 +92,7 @@ export default function AddYtSubscriberBadge() {
       setError(undefined);
       setNotVerifiedMesg(undefined);
 
-      console.log(`checking for session ${JSON.stringify(session)}`);
+      console.log(`checking for session ${JSON.stringify(useSessionResult)}`);
       if (
         !session ||
         !channelInfo ||
@@ -101,8 +101,6 @@ export default function AddYtSubscriberBadge() {
       ) {
         setError("Account not available.");
 
-        const session2 = useSession();
-        console.log(`2nd check for session ${JSON.stringify(session2)}`);
         return;
       }
 
