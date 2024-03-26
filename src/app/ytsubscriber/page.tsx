@@ -25,9 +25,11 @@ export default function AddYtSubscriberBadge() {
   const useSessionResult = useSession();
 
   let code = "";
+  let redirect = "";
   if (typeof window !== "undefined") {
     const queryParameters = new URLSearchParams(window.location.search);
     code = queryParameters.get("code") ?? "";
+    redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
   const session = useSession().data;
@@ -57,7 +59,7 @@ export default function AddYtSubscriberBadge() {
         return;
       }
 
-      console.log(`got token ${JSON.stringify(result)}`);
+      // console.log(`got token ${JSON.stringify(result)}`);
       setToken(result.token);
 
       // load config
@@ -107,11 +109,12 @@ export default function AddYtSubscriberBadge() {
       const success = await verifySubscription(accessToken, channelInfo.id);
       if (success) {
         setStage("VERIFIED");
+        await awardBadge(token);
       } else {
         let email = session.user?.email;
         if (!email) email = "";
         setNotVerifiedMesg(
-          `Channel subscription for ${email} could not be found.`
+          `User ${email} is not subscribed to ${channelInfo.snippet.title}.`
         );
         setStage("NOT_VERIFIED");
       }
@@ -190,10 +193,21 @@ export default function AddYtSubscriberBadge() {
                   color={theme.palette.grey[800]}
                   fontWeight="bold"
                 >
-                  Sign in to get your verified subscriber badge.
+                  Sign in and allow AKA Profiles to View your YouTube account.
                 </Typography>
               </Box>
               <GoogleButton disabled={false}></GoogleButton>
+              <Box pt={1} pb={2}>
+                <Typography
+                  paddingTop={1}
+                  variant="subtitle2"
+                  align="left"
+                  color={theme.palette.grey[800]}
+                >
+                  Only your subscription to {channelInfo?.snippet.title} will be
+                  verified. No other personal information will be saved.
+                </Typography>
+              </Box>
             </>
           )}
           {stage == "CHECKING" && (
@@ -227,6 +241,7 @@ export default function AddYtSubscriberBadge() {
               <AlertTitle>Verified Subscriber</AlertTitle>
               Channel subscription successfully verified.
             </Alert>
+            <a href={redirect}>CONTINUE</a>
           </>
         )}
       </Box>
