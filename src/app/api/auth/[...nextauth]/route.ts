@@ -21,6 +21,7 @@ const authOptions: AuthOptions = {
             "https://www.googleapis.com/auth/youtube.readonly",
           ].join(" "),
           prompt: "consent",
+          access_type: "offline",
           response_type: "code",
         },
       },
