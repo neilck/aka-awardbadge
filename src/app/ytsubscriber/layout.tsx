@@ -22,7 +22,7 @@ export default async function YtLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider session={session}>
+        <SessionProvider session={session} refetchInterval={5 * 60}>
           <ThemeRegistry>{children}</ThemeRegistry>
         </SessionProvider>
       </body>

@@ -11,18 +11,34 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import { Session } from "next-auth";
-import { signOut, useSession } from "next-auth/react";
 import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { ChannelInfo } from "./ChannelInfoResponse";
 import getChannelInfo, { verifySubscription } from "./serverActions";
 import GoogleButton from "./GoogleButton";
-import { useFormStatus } from "react-dom";
-import { ConfigParam, getConfigParamValue } from "@/app/config";
+import { getConfigParamValue } from "@/app/config";
+
+const getSession = async () => {
+  const url = `/api/auth/session`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json",
+    },
+    cache: "no-cache",
+  });
+
+  const session = await response.json();
+  console.log(url);
+  console.log(session);
+  if (Object.entries(session).length === 0) return null;
+  else return session;
+};
 
 export default function AddYtSubscriberBadge() {
   const [handle, setHandle] = useState("");
-  const useSessionResult = useSession();
+  const [session, setSession] = useState<any>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   let code = "";
   let redirect = "";
@@ -31,9 +47,6 @@ export default function AddYtSubscriberBadge() {
     code = queryParameters.get("code") ?? "";
     redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
-
-  const session = useSessionResult.data;
-  const loggedIn = session != null;
 
   const [token, setToken] = useState("");
   const [channelInfo, setChannelInfo] = useState<ChannelInfo | undefined>(
@@ -70,6 +83,11 @@ export default function AddYtSubscriberBadge() {
         const handle = getConfigParamValue("handle", config);
         setHandle(handle ?? "");
       }
+
+      // load session
+      const session = await getSession();
+      setSession(session);
+      setLoggedIn(session != null);
     };
 
     load();
@@ -92,7 +110,8 @@ export default function AddYtSubscriberBadge() {
       setError(undefined);
       setNotVerifiedMesg(undefined);
 
-      console.log(`checking for session ${JSON.stringify(useSessionResult)}`);
+      console.log(`checking for session ${JSON.stringify(session)}`);
+
       if (
         !session ||
         !channelInfo ||
