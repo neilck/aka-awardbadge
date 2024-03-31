@@ -1,0 +1,17 @@
+.akah-container {
+    display: flex; /* Make the container a flexbox */
+  }
+  
+  .akah-image {
+    width: auto; /* Let the image width adjust to its content */
+  }
+  
+  .akah-content {
+    flex: 1; /* Make the content area fill remaining space */
+    padding: 1rem; /* Add some padding for better readability */
+  }
+  
+  .akah-title {
+    font-weight: bold; /* Make the title bold */
+    margin-bottom: 0.5rem; /* Add some space between title and text */
+  }
