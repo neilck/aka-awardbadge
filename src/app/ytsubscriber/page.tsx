@@ -2,15 +2,17 @@
 
 import theme from "../components/ThemeRegistry/theme";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
+import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
 import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { ChannelInfo } from "./ChannelInfoResponse";
 import getChannelInfo, { verifySubscription } from "./serverActions";
@@ -29,8 +31,8 @@ const getSession = async () => {
   });
 
   const session = await response.json();
-  console.log(url);
-  console.log(session);
+  // console.log(url);
+  // console.log(session);
   if (Object.entries(session).length === 0) return null;
   else return session;
 };
@@ -72,7 +74,7 @@ export default function AddYtSubscriberBadge() {
         return;
       }
 
-      // console.log(`got token ${JSON.stringify(result)}`);
+      console.log(`got token ${JSON.stringify(result)}`);
       setToken(result.token);
 
       // load config
@@ -148,6 +150,7 @@ export default function AddYtSubscriberBadge() {
 
   return (
     <Stack id="contentWindow" alignItems="center" marginTop={2}>
+      <AkaProfilesHeader />
       <Box
         id="contentArea"
         sx={{
@@ -262,7 +265,9 @@ export default function AddYtSubscriberBadge() {
               <AlertTitle>Verified Subscriber</AlertTitle>
               Channel subscription successfully verified.
             </Alert>
-            <a href={redirect}>CONTINUE</a>
+            <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
+              CONTINUE
+            </Button>
           </>
         )}
       </Box>

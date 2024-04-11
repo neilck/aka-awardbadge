@@ -7,18 +7,22 @@ import Grid from "@mui/material/Grid";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
+import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
 import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { ConfigParam, getConfigParamValue } from "@/app/config";
 import { Location, getIpToLocation } from "./serverActions";
 
 export default function IpLocate() {
   let code = "";
+  let redirect = "";
   if (typeof window !== "undefined") {
     const queryParameters = new URLSearchParams(window.location.search);
     code = queryParameters.get("code") ?? "";
+    redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
   const [token, setToken] = useState("");
@@ -129,6 +133,9 @@ export default function IpLocate() {
       <Head>
         <title>IP Location Badge</title>
       </Head>
+      <Box padding="10">
+        <AkaProfilesHeader />
+      </Box>
       <Box
         sx={{
           display: "flex",
@@ -193,6 +200,9 @@ export default function IpLocate() {
                 <AlertTitle>Location Verified</AlertTitle>
                 {successMesg}
               </Alert>
+              <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
+                CONTINUE
+              </Button>
             </>
           )}
           {error != "" && (
@@ -201,6 +211,9 @@ export default function IpLocate() {
                 <AlertTitle>Not in required location</AlertTitle>
                 {errorMesg}
               </Alert>
+              <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
+                CONTINUE
+              </Button>
             </>
           )}
         </Paper>

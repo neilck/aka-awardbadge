@@ -1,17 +1,25 @@
 .akah-container {
     display: flex; /* Make the container a flexbox */
+    border: 1px solid;
+    border-color: #bdbdbd;
+    border-radius: 6px;
+    padding: 0.5rem;
+    justify-content: center;
   }
   
   .akah-image {
-    width: auto; /* Let the image width adjust to its content */
+    width: 80px; /* Let the image width adjust to its content */
+    object-fit: cover;
   }
   
   .akah-content {
-    flex: 1; /* Make the content area fill remaining space */
-    padding: 1rem; /* Add some padding for better readability */
+    padding-left: 1rem; /* Add some padding for better readability */
+    padding-right: 1rem; /* Add some padding for better readability */
+    justify-content: start;
   }
   
   .akah-title {
-    font-weight: bold; /* Make the title bold */
+    font-size: 1.3em;
+    font-weight: 500; /* Make the title bold */
     margin-bottom: 0.5rem; /* Add some space between title and text */
   }

@@ -2,16 +2,18 @@
 
 import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
+import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  CircularProgress,
-  Paper,
-  Typography,
-} from "@mui/material";
+
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+
 import { token as getToken, awardBadge } from "@/app/actions/akaActions";
 import { getCaptchaResult } from "./serverActions";
 
@@ -21,9 +23,11 @@ export default function Notabot() {
 
   const captchaRef = useRef(null);
   let code = "";
+  let redirect = "";
   if (typeof window !== "undefined") {
     const queryParameters = new URLSearchParams(window.location.search);
     code = queryParameters.get("code") ?? "";
+    redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
   const [token, setToken] = useState("");
@@ -100,6 +104,9 @@ export default function Notabot() {
         <title>Not-a-Bot Badge</title>
       </Head>
       <ReCaptchaProvider reCaptchaKey={KEY_V3}>
+        <Box padding="10">
+          <AkaProfilesHeader />
+        </Box>
         <Box
           sx={{
             display: "flex",
@@ -146,6 +153,9 @@ export default function Notabot() {
                   <AlertTitle>Success</AlertTitle>
                   Badge has been awarded!
                 </Alert>
+                <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
+                  CONTINUE
+                </Button>
               </>
             )}
             {error != "" && (
