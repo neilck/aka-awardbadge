@@ -1,8 +1,9 @@
 .akah-container {
+    width: 100%;
+    background-color: white;
     display: flex; /* Make the container a flexbox */
-    border: 1px solid;
+    border-bottom: 1px solid;
     border-color: #bdbdbd;
-    border-radius: 6px;
     padding: 0.5rem;
     justify-content: center;
   }

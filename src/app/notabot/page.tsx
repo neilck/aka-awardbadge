@@ -104,9 +104,6 @@ export default function Notabot() {
         <title>Not-a-Bot Badge</title>
       </Head>
       <ReCaptchaProvider reCaptchaKey={KEY_V3}>
-        <Box padding="10">
-          <AkaProfilesHeader />
-        </Box>
         <Box
           sx={{
             display: "flex",
@@ -120,52 +117,64 @@ export default function Notabot() {
             sx={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
               padding: 2,
               textAlign: "center",
-              width: "90%",
-              height: "90%",
+              width: "95%",
+              height: "95%",
             }}
           >
-            {!isAwarded && (
-              <>
-                <Typography variant="body1" component="div" sx={{ pb: 2 }}>
-                  Please prove that you are not a robot by checking the box
-                  below.
-                </Typography>
-                <ReCAPTCHA
-                  ref={captchaRef}
-                  onChange={onChangeHandler}
-                  size="normal"
-                  sitekey={KEY_V2}
-                />
-                {isChecking && (
-                  <Box pt={3}>
-                    <CircularProgress />
-                  </Box>
-                )}
-              </>
-            )}
-            {isAwarded && (
-              <>
-                <Alert severity="success">
-                  <AlertTitle>Success</AlertTitle>
-                  Badge has been awarded!
-                </Alert>
-                <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
-                  CONTINUE
-                </Button>
-              </>
-            )}
-            {error != "" && (
-              <>
-                <Alert severity="error">
-                  <AlertTitle>Error</AlertTitle>
-                  An error has occcured. ${error}
-                </Alert>
-              </>
-            )}
+            <AkaProfilesHeader />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 2,
+                textAlign: "center",
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              {!isAwarded && (
+                <>
+                  <Typography variant="body1" component="div" sx={{ pb: 2 }}>
+                    Please prove that you are not a robot by checking the box
+                    below.
+                  </Typography>
+                  <ReCAPTCHA
+                    ref={captchaRef}
+                    onChange={onChangeHandler}
+                    size="normal"
+                    sitekey={KEY_V2}
+                  />
+                  {isChecking && (
+                    <Box pt={3}>
+                      <CircularProgress />
+                    </Box>
+                  )}
+                </>
+              )}
+              {isAwarded && (
+                <>
+                  <Alert severity="success">
+                    <AlertTitle>Success</AlertTitle>
+                    Badge has been awarded!
+                  </Alert>
+                  <Button href={redirect} variant="contained" sx={{ mt: 2 }}>
+                    CONTINUE
+                  </Button>
+                </>
+              )}
+              {error != "" && (
+                <>
+                  <Alert severity="error">
+                    <AlertTitle>Error</AlertTitle>
+                    An error has occcured. ${error}
+                  </Alert>
+                </>
+              )}
+            </Box>
           </Paper>
         </Box>
       </ReCaptchaProvider>
