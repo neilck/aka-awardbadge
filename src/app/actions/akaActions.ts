@@ -35,15 +35,6 @@ const awardBadgeURL = process.env.AKA_AWARD_BADGE_URL;
 const log = debug("akaActions:log");
 const error = debug("akaActions:error");
 
-declare module "jsonwebtoken" {
-  export interface JwtPayload {
-    session: string;
-    target: string;
-    owner: string;
-    configParams: ConfigParam[];
-  }
-}
-
 // return header with AKA_API_KEY or token authorization
 const getAuthHeaders = (token?: string) => {
   let authorization = "";
