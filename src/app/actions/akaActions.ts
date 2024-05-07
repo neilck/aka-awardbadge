@@ -135,7 +135,11 @@ export const postAkaProfiles = async (
   token: string,
   data: object
 ): Promise<object | undefined> => {
-  log(`postAkaProfiles called token: ${token}, data: ${data} url: ${url}`);
+  log(
+    `postAkaProfiles called. data: ${JSON.stringify(
+      data
+    )} url: ${url} token: ${token}`
+  );
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -150,8 +154,9 @@ export const postAkaProfiles = async (
       log(`postAkaProfiles returned data ${JSON.stringify(json)}`);
       return json;
     } else {
+      const text = await response.text();
       error(
-        `postAkaProfiles returned ${response.status} ${response.statusText}`
+        `postAkaProfiles returned ${response.status} ${response.statusText} ${text}`
       );
       return undefined;
     }

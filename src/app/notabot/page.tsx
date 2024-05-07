@@ -170,7 +170,7 @@ export default function Notabot() {
                 <>
                   <Alert severity="error">
                     <AlertTitle>Error</AlertTitle>
-                    An error has occcured. ${error}
+                    An error has occcured. {error}
                   </Alert>
                 </>
               )}
