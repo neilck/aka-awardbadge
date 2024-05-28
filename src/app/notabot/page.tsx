@@ -31,6 +31,7 @@ export default function Notabot() {
   }
 
   const [token, setToken] = useState("");
+  const [captchaPassed, setCaptchaPassed] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isValidSession, setIsValidSession] = useState(true);
   const [isAwarded, setIsAwarded] = useState(false);
@@ -57,12 +58,41 @@ export default function Notabot() {
         return;
       }
 
+      // console.log(`Setting token ${result.token}`);
       setToken(result.token);
       setIsValidSession(true);
     };
 
     checkSession();
   }, []);
+
+  useEffect(() => {
+    const doAward = async (
+      token: string,
+      captchaPassed: boolean,
+      isAwarded: boolean
+    ) => {
+      if (token != "" && captchaPassed && !isAwarded) {
+        const result = await awardBadge(token).catch((posterror) => {
+          setError(posterror);
+          setIsChecking(false);
+          return;
+        });
+
+        if (!result) {
+          setError("unknown");
+          setIsChecking(false);
+          return;
+        }
+
+        if (result.success) {
+          setIsAwarded(true);
+        }
+      }
+    };
+
+    doAward(token, captchaPassed, isAwarded);
+  }, [token, captchaPassed, isAwarded]);
 
   // result of reCaptcha
   const onChangeHandler = async () => {
@@ -73,24 +103,7 @@ export default function Notabot() {
       const google_response = await getCaptchaResult(captchaToken);
 
       if (google_response.success) {
-        // award badge is successful
-        if (token != "") {
-          const result = await awardBadge(token).catch((posterror) => {
-            setError(posterror);
-            setIsChecking(false);
-            return;
-          });
-
-          if (!result) {
-            setError("unknown");
-            setIsChecking(false);
-            return;
-          }
-
-          if (result.success) {
-            setIsAwarded(true);
-          }
-        }
+        setCaptchaPassed(true);
       }
     }
     setIsChecking(false);
@@ -123,7 +136,7 @@ export default function Notabot() {
               height: "95%",
             }}
           >
-            <AkaProfilesHeader />
+            {/* <AkaProfilesHeader /> */}
             <Box
               sx={{
                 display: "flex",
