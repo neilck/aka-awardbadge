@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Head from "next/head";
-import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
 import ReCAPTCHA from "react-google-recaptcha";
 import { ReCaptchaProvider } from "next-recaptcha-v3";
 
@@ -14,7 +13,8 @@ import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
-import { token as getToken, awardBadge } from "@/app/actions/akaActions";
+import getErrorMessage from "../errors";
+import { load, LoadResult, doAwardBadge } from "./serverActions";
 import { getCaptchaResult } from "./serverActions";
 
 export default function Notabot() {
@@ -30,50 +30,52 @@ export default function Notabot() {
     redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
-  const [token, setToken] = useState("");
+  const [encryptedToken, setEncryptedToken] = useState(""); // token encrypted by server for safe client storage
   const [captchaPassed, setCaptchaPassed] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [isValidSession, setIsValidSession] = useState(true);
   const [isAwarded, setIsAwarded] = useState(false);
   const [error, setError] = useState("");
 
+  const init = async () => {
+    let loadResult: LoadResult = { isValidSession: false };
+    try {
+      loadResult = await load(code);
+    } catch (error) {
+      const mesg = getErrorMessage(error);
+      setError(mesg);
+      return;
+    }
+    console.log("encrypted token received.");
+    setEncryptedToken(loadResult.encryptedToken ?? "");
+    setIsValidSession(loadResult.isValidSession ?? false);
+    if (loadResult.error) setError(loadResult.error ?? "");
+  };
+
+  const effectRan = useRef(false);
+
   useEffect(() => {
-    const checkSession = async () => {
-      if (code == "") {
-        setIsValidSession(false);
-        return;
+    if (process.env.NODE_ENV == "development") {
+      // prevent running more than once in dev
+      if (!effectRan.current) {
+        init();
       }
-
-      const result = await getToken(code);
-
-      if (result.error) {
-        console.log(`Error verifying token: ${result.error}`);
-        setIsValidSession(false);
-        return;
-      }
-
-      if (!result.token) {
-        console.log(`Token missing from response.`);
-        setIsValidSession(false);
-        return;
-      }
-
-      // console.log(`Setting token ${result.token}`);
-      setToken(result.token);
-      setIsValidSession(true);
-    };
-
-    checkSession();
+      return () => {
+        effectRan.current = true;
+      };
+    } else {
+      init();
+    }
   }, []);
 
   useEffect(() => {
     const doAward = async (
-      token: string,
+      encryptedToken: string,
       captchaPassed: boolean,
       isAwarded: boolean
     ) => {
-      if (token != "" && captchaPassed && !isAwarded) {
-        const result = await awardBadge(token).catch((posterror) => {
+      if (encryptedToken != "" && captchaPassed && !isAwarded) {
+        const result = await doAwardBadge(encryptedToken).catch((posterror) => {
           setError(posterror);
           setIsChecking(false);
           return;
@@ -91,8 +93,8 @@ export default function Notabot() {
       }
     };
 
-    doAward(token, captchaPassed, isAwarded);
-  }, [token, captchaPassed, isAwarded]);
+    doAward(encryptedToken, captchaPassed, isAwarded);
+  }, [encryptedToken, captchaPassed, isAwarded]);
 
   // result of reCaptcha
   const onChangeHandler = async () => {

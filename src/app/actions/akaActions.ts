@@ -1,10 +1,14 @@
+/**
+ * @file util/akaAction.ts
+ * @summary Server actions to securely communicate with AKA Profiles.
+ */
+
 "use server";
 
-import debug from "debug";
 import getErrorMessage from "@/app/errors";
 import * as jwt from "jsonwebtoken";
 
-import { ConfigParam } from "../config";
+import { ConfigParam } from "./configParams";
 
 declare module "jsonwebtoken" {
   export interface JwtPayload {
@@ -28,14 +32,15 @@ DwIDAQAB
 
 const api_key = process.env.AKA_API_KEY;
 const tokenURL = process.env.AKA_TOKEN_URL;
-const verifySessionURL = process.env.AKA_VERIFY_SESSION_URL;
-const loadConfigURL = process.env.AKA_LOAD_CONFIG_URL;
 const awardBadgeURL = process.env.AKA_AWARD_BADGE_URL;
 
-const log = debug("akaActions:log");
-const error = debug("akaActions:error");
-
-// return header with AKA_API_KEY or token authorization
+/**
+ * Generates the authentication headers for API requests.
+ *
+ * @param {string} [token] - Optional bearer token for authentication. If not provided, the function will use a predefined API key.
+ * @throws Will throw an error if the API key is not set and no token is provided.
+ * @returns {Object} The headers object containing `Content-Type` and `Authorization`.
+ */
 const getAuthHeaders = (token?: string) => {
   let authorization = "";
   if (token) {
@@ -53,12 +58,66 @@ const getAuthHeaders = (token?: string) => {
   };
 };
 
-// verify valid session
+/**
+ * Sends POST requests to an AKA Profiles endpoint with the provided token and data.
+ *
+ * @param {string} url - The AKA Profiles endpoint to send the POST request to.
+ * @param {string} token - The authorization token to use for the request.
+ * @param {object} data - The data to include in the body of the POST request.
+ * @returns {Promise<{ success: boolean; message: string; data?: {} }>}
+ * An object indicating the success status, a message, and optionally the returned data.
+ */
+const postAkaProfiles = async (
+  url: string,
+  token: string,
+  data: object
+): Promise<{ success: boolean; message: string; data?: {} }> => {
+  console.log(
+    `postAkaProfiles called. data: ${JSON.stringify(
+      data
+    )} url: ${url} token: ${token}`
+  );
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: getAuthHeaders(token),
+      body: JSON.stringify(data),
+      cache: "no-cache",
+    });
+
+    console.log(
+      `postAkaProfiles returned ${response.status} ${response.statusText}`
+    );
+    if (response.status == 200) {
+      const data = await response.json();
+      if (data) {
+        console.log(`postAkaProfiles returned data ${JSON.stringify(data)}`);
+      }
+      return { success: true, message: "", data: data };
+    } else {
+      const statusCode = response.status;
+      const text = await response.text();
+      const mesg = `${statusCode}  ${text}`;
+      console.log(mesg);
+      return { success: false, message: mesg };
+    }
+  } catch (myError) {
+    return { success: false, message: getErrorMessage(myError) };
+  }
+};
+
+/**
+ * Retrieves and verifies a token from the authorization server.
+ *
+ * @param {string} code - The authorization code to exchange for a token.
+ * @returns {Promise<{ token?: string; payload?: jwt.JwtPayload; error?: string }>}
+ * An object containing the token, the decoded payload, or an error message.
+ * @throws Will throw an error if the token URL is not set, or if there is an error during the request or decoding.
+ */
 export const token = async (
   code: string
 ): Promise<{ token?: string; payload?: jwt.JwtPayload; error?: string }> => {
   if (!tokenURL) {
-    error("AKA_TOKEN_URL not set");
     throw new Error("AKA_TOKEN_URL not set");
   }
 
@@ -94,7 +153,7 @@ export const token = async (
   try {
     const decoded = jwt.verify(token, akaPublicKey);
     if (typeof decoded === "string") {
-      debug("token is string instead of JwtPayload");
+      console.log("Error: token is string instead of JwtPayload");
       return { error: "unauthorized" };
     }
     return { token: token, payload: decoded };
@@ -105,15 +164,20 @@ export const token = async (
   }
 };
 
-// award badge if eligible during user session
-// session is unique to user
-// awardToken is unique to badge within session
+/**
+ * Awards a badge using the specified token and award data.
+ *
+ * @param {string} token - The authorization token to use for the request.
+ * @param {object} [awarddata] - Optional data to include with the badge award request.
+ * @returns {Promise<{ success: boolean; message: string }>}
+ * An object indicating the success status and a message.
+ * @throws Will throw an error if the award badge URL is not set or if the request fails.
+ */
 export const awardBadge = async (
   token: string,
   awarddata?: object
-): Promise<{ success: boolean; badgeAwardId: string } | undefined> => {
+): Promise<{ success: boolean; message: string }> => {
   if (!awardBadgeURL) {
-    error("AKA_AWARD_BADGE_URL not set");
     throw new Error("AKA_AWARD_BADGE_URL not set");
   }
 
@@ -124,43 +188,5 @@ export const awardBadge = async (
   );
   if (result === undefined) return result;
 
-  return result as { success: boolean; badgeAwardId: string };
-};
-
-// award badge if eligible during user session
-// session is unique to user
-// awardToken is unique to badge within session
-export const postAkaProfiles = async (
-  url: string,
-  token: string,
-  data: object
-): Promise<object | undefined> => {
-  log(
-    `postAkaProfiles called. data: ${JSON.stringify(
-      data
-    )} url: ${url} token: ${token}`
-  );
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: getAuthHeaders(token),
-      body: JSON.stringify(data),
-      cache: "no-cache",
-    });
-
-    if (response.status == 200) {
-      const json = await response.json();
-      log(`postAkaProfiles returned ${response.status} ${response.statusText}`);
-      log(`postAkaProfiles returned data ${JSON.stringify(json)}`);
-      return json;
-    } else {
-      const text = await response.text();
-      error(
-        `postAkaProfiles returned ${response.status} ${response.statusText} ${text}`
-      );
-      return undefined;
-    }
-  } catch (myError) {
-    error(`Error during ${url} request: ${getErrorMessage(myError)}`);
-  }
+  return result as { success: boolean; message: string };
 };

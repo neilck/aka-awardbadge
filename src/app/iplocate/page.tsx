@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 
 import Grid from "@mui/material/Grid";
@@ -11,9 +11,8 @@ import Button from "@mui/material/Button";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 
-import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
-import { token as getToken, awardBadge } from "@/app/actions/akaActions";
-import { ConfigParam, getConfigParamValue } from "@/app/config";
+import getErrorMessage from "../errors";
+import { load, LoadResult, doAwardBadge } from "./serverActions";
 import { Location, getIpToLocation } from "./serverActions";
 
 export default function IpLocate() {
@@ -25,11 +24,10 @@ export default function IpLocate() {
     redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
-  const [token, setToken] = useState("");
+  const [encryptedToken, setEncryptedToken] = useState(""); // token encrypted by server for safe client storage
   const [isValidSession, setIsValidSession] = useState(false);
   const [location, setLocation] = useState<Location | undefined>(undefined);
   const [configLoaded, setConfigLoaded] = useState(false);
-  const [configParams, setConfigParams] = useState<ConfigParam[]>([]);
   const [country, setCountry] = useState<string | undefined>(undefined);
   const [state, setState] = useState<string | undefined>(undefined);
   const [city, setCity] = useState<string | undefined>(undefined);
@@ -39,54 +37,65 @@ export default function IpLocate() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
+  const init = async () => {
+    let loadResult: LoadResult = { isValidSession: false };
+    try {
+      loadResult = await load(code);
+    } catch (error) {
+      const mesg = getErrorMessage(error);
+      setError(mesg);
+      return;
+    }
+
+    if (loadResult.error) {
+      setError(loadResult.error ?? "");
+      return;
+    }
+
+    setEncryptedToken(loadResult.encryptedToken ?? "");
+    setIsValidSession(loadResult.isValidSession ?? false);
+
+    // load config
+    const country = loadResult.country;
+    if (country && country != "") setCountry(country);
+    const state = loadResult.region;
+    if (state && state != "") setState(state);
+    const city = loadResult.city;
+    if (city && city != "") setCity(city);
+
+    if (country || state || city) {
+      let loc = "";
+      if (city) loc = ` ${loc} ${city},`;
+      if (state) loc = ` ${loc} ${state},`;
+      if (country) loc = ` ${loc} ${country}.`;
+      setSuccessMesg(`Verified in location${loc}`);
+      setErrorMesg(`Not in ${loc}`);
+    }
+
+    setConfigLoaded(true);
+
+    // get location
+    const locResult = await getIpToLocation();
+    if (locResult != null) setLocation(locResult.location);
+    if (locResult?.message) {
+      setError(locResult.message);
+    }
+  };
+
+  const effectRan = useRef(false);
+
   useEffect(() => {
-    const load = async () => {
-      if (code == "") {
-        setIsValidSession(false);
-        return;
+    if (process.env.NODE_ENV == "development") {
+      // prevent running more than once in dev
+      if (!effectRan.current) {
+        init();
       }
-
-      const result = await getToken(code);
-
-      if (result.error || !result.token) {
-        setIsValidSession(false);
-        return;
-      }
-
-      setToken(result.token);
-      setIsValidSession(true);
-
-      // load config
-      if (result.payload && result.payload.configParams) {
-        const config = result.payload.configParams;
-        setConfigParams(config);
-        const country = getConfigParamValue("Country", config);
-        if (country != "") setCountry(country);
-        const state = getConfigParamValue("State/Prov", config);
-        if (state != "") setState(state);
-        const city = getConfigParamValue("City", config);
-        if (city != "") setCity(city);
-
-        if (country || state || city) {
-          let loc = "";
-          if (city) loc = ` ${loc} ${city},`;
-          if (state) loc = ` ${loc} ${state},`;
-          if (country) loc = ` ${loc} ${country}.`;
-          setSuccessMesg(`Verified in location${loc}`);
-          setErrorMesg(`Not in ${loc}`);
-        }
-      }
-      setConfigLoaded(true);
-
-      // get location
-      const locResult = await getIpToLocation();
-      if (locResult != null) setLocation(locResult.location);
-      if (locResult?.message) {
-        setError(locResult.message);
-      }
-    };
-
-    load();
+      return () => {
+        effectRan.current = true;
+      };
+    } else {
+      init();
+    }
   }, []);
 
   useEffect(() => {
@@ -96,20 +105,20 @@ export default function IpLocate() {
         // award badge is current location matches user-defined parameters
         setSuccess(successMesg);
 
-        if (token != "") {
+        if (encryptedToken != "") {
           // send location data to AKA Profiles in badge award call
           const awardData: any = {};
           if (location.country_name) awardData.country = location.country_name;
           if (location.state_prov) awardData.region = location.state_prov;
           if (location.city) awardData.city = location.city;
 
-          awardBadge(token, awardData);
+          doAwardBadge(encryptedToken, awardData);
         }
       } else {
         setError(errorMesg);
       }
     }
-  }, [configLoaded, location]);
+  }, [encryptedToken, configLoaded, location]);
 
   /**
    * If user-defined parameters specifies match values, determine if matches
@@ -152,7 +161,6 @@ export default function IpLocate() {
             height: "95%",
           }}
         >
-          <AkaProfilesHeader />
           <Box
             sx={{
               display: "flex",

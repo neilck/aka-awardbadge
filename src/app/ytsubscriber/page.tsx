@@ -12,12 +12,12 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import AkaProfilesHeader from "../components/ThemeRegistry/AkaProfilesHeader";
-import { token as getToken, awardBadge } from "@/app/actions/akaActions";
+import getErrorMessage from "../errors";
+import { load, LoadResult, doAwardBadge } from "./serverActions";
+
 import { ChannelInfo } from "./ChannelInfoResponse";
 import getChannelInfo, { verifySubscription } from "./serverActions";
 import GoogleButton from "./GoogleButton";
-import { getConfigParamValue } from "@/app/config";
 
 const getSession = async () => {
   const url = `/api/auth/session`;
@@ -50,7 +50,7 @@ export default function AddYtSubscriberBadge() {
     redirect = decodeURIComponent(queryParameters.get("redirect") ?? "");
   }
 
-  const [token, setToken] = useState("");
+  const [encryptedToken, setEncryptedToken] = useState(""); // token encrypted by server for safe client storage
   const [channelInfo, setChannelInfo] = useState<ChannelInfo | undefined>(
     undefined
   );
@@ -63,36 +63,46 @@ export default function AddYtSubscriberBadge() {
     undefined
   );
 
+  const init = async () => {
+    let loadResult: LoadResult = { isValidSession: false };
+    try {
+      loadResult = await load(code);
+    } catch (error) {
+      const mesg = getErrorMessage(error);
+      setError(mesg);
+      return;
+    }
+
+    if (loadResult.error) {
+      setError(loadResult.error ?? "");
+      return;
+    }
+
+    setEncryptedToken(loadResult.encryptedToken ?? "");
+
+    // load config
+    const handle = loadResult.handle;
+    if (handle && handle != "") setHandle(handle);
+
+    const session = await getSession();
+    setSession(session);
+    setLoggedIn(session != null);
+  };
+
+  const effectRan = useRef(false);
+
   useEffect(() => {
-    const load = async () => {
-      if (code == "") {
-        return;
+    if (process.env.NODE_ENV == "development") {
+      // prevent running more than once in dev
+      if (!effectRan.current) {
+        init();
       }
-
-      const result = await getToken(code);
-      if (result.error || !result.token) {
-        return;
-      }
-
-      console.log(`got token ${JSON.stringify(result)}`);
-      setToken(result.token);
-
-      // load config
-      if (result.payload && result.payload.configParams) {
-        const config = result.payload.configParams;
-
-        console.log(`config ${config}`);
-        const handle = getConfigParamValue("handle", config);
-        setHandle(handle ?? "");
-      }
-
-      // load session
-      const session = await getSession();
-      setSession(session);
-      setLoggedIn(session != null);
-    };
-
-    load();
+      return () => {
+        effectRan.current = true;
+      };
+    } else {
+      init();
+    }
   }, []);
 
   useEffect(() => {
@@ -132,7 +142,7 @@ export default function AddYtSubscriberBadge() {
       const success = await verifySubscription(accessToken, channelInfo.id);
       if (success) {
         setStage("VERIFIED");
-        await awardBadge(token);
+        await doAwardBadge(encryptedToken);
       } else {
         let email = session.user?.email;
         if (!email) email = "";
@@ -150,7 +160,6 @@ export default function AddYtSubscriberBadge() {
 
   return (
     <Stack id="contentWindow" alignItems="center" marginTop={2}>
-      <AkaProfilesHeader />
       <Box
         id="contentArea"
         sx={{
