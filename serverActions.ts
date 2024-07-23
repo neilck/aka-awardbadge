@@ -1,9 +1,10 @@
 "use server";
 
 import getErrorMessage from "@/app/errors";
-import { token, awardBadge } from "../actions/akaActions";
+
 import { encrypt, decrypt } from "@/util/aes";
-import { getConfigParamValue } from "../actions/configParams";
+import { token, awardBadge } from "@/app/actions/akaActions";
+import { getConfigParamValue } from "@/app/actions/configParams";
 import { ChannelInfoResponse } from "./ChannelInfoResponse";
 
 export interface LoadResult {

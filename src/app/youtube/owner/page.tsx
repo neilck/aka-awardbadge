@@ -1,8 +1,10 @@
 "use client";
-
-import theme from "../components/ThemeRegistry/theme";
-
 import { useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
+import theme from "../../components/ThemeRegistry/theme";
+import { getSession } from "../helper";
+
+import Head from "next/head";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Avatar from "@mui/material/Avatar";
@@ -12,35 +14,16 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import getErrorMessage from "../errors";
+import getErrorMessage from "../../errors";
 import { load, LoadResult, doAwardBadge } from "./serverActions";
 
 import { ChannelInfo } from "./ChannelInfoResponse";
-import getChannelInfo, { verifySubscription } from "./serverActions";
-import GoogleButton from "./GoogleButton";
+import getChannelInfo from "./serverActions";
+import GoogleButton from "../GoogleButton";
 
-const getSession = async () => {
-  const url = `/api/auth/session`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      "Accept": "application/json",
-    },
-    cache: "no-cache",
-  });
-
-  const session = await response.json();
-  // console.log(url);
-  // console.log(session);
-  if (Object.entries(session).length === 0) return null;
-  else return session;
-};
-
-export default function AddYtSubscriberBadge() {
+export default function AddYTOwnerBadge() {
+  const { status } = useSession();
   const [handle, setHandle] = useState("");
-  const [session, setSession] = useState<any>(null);
-  const [loggedIn, setLoggedIn] = useState(false);
 
   let code = "";
   let redirect = "";
@@ -57,7 +40,7 @@ export default function AddYtSubscriberBadge() {
   const [stage, setStage] = useState<
     "INITIAL" | "CHECKING" | "VERIFIED" | "NOT_VERIFIED" | "ERROR"
   >("INITIAL");
-  const [isLoading, setIsLoading] = useState(true);
+
   const [error, setError] = useState<string | undefined>(undefined);
   const [notVerifiedMesg, setNotVerifiedMesg] = useState<string | undefined>(
     undefined
@@ -79,14 +62,6 @@ export default function AddYtSubscriberBadge() {
     }
 
     setEncryptedToken(loadResult.encryptedToken ?? "");
-
-    // load config
-    const handle = loadResult.handle;
-    if (handle && handle != "") setHandle(handle);
-
-    const session = await getSession();
-    setSession(session);
-    setLoggedIn(session != null);
   };
 
   const effectRan = useRef(false);
@@ -106,60 +81,30 @@ export default function AddYtSubscriberBadge() {
   }, []);
 
   useEffect(() => {
-    const loadHandle = async () => {
-      if (handle != "") {
-        const channelInfo = await getChannelInfo(handle);
-        setChannelInfo(channelInfo);
-        setIsLoading(false);
-      }
-    };
+    switch (status) {
+      case "authenticated":
+        const session = getSession().then((session) => {
+          // when session from Google, has accessToken
+          const accessToken = session.accessToken;
+          if (typeof accessToken != "string" || accessToken === "") {
+            setError("Account not available.");
+            return;
+          } else {
+            getChannelInfo(accessToken).then((channelInfo) => {
+              setChannelInfo(channelInfo);
+            });
+          }
+        });
 
-    loadHandle();
-  }, [handle]);
-
-  useEffect(() => {
-    const runCheck = async () => {
-      setError(undefined);
-      setNotVerifiedMesg(undefined);
-
-      console.log(`checking for session ${JSON.stringify(session)}`);
-
-      if (
-        !session ||
-        !channelInfo ||
-        !session.accessToken ||
-        session.accessToken == ""
-      ) {
-        setError("Account not available.");
-
-        return;
-      }
-
-      const accessToken = session.accessToken;
-
-      console.log("runCheck called with accessToken: " + accessToken);
-
-      const success = await verifySubscription(accessToken, channelInfo.id);
-      if (success) {
-        setStage("VERIFIED");
-        await doAwardBadge(encryptedToken);
-      } else {
-        let email = session.user?.email;
-        if (!email) email = "";
-        setNotVerifiedMesg(
-          `User ${email} is not subscribed to ${channelInfo.snippet.title}.`
-        );
-        setStage("NOT_VERIFIED");
-      }
-    };
-
-    if (!isLoading && loggedIn) {
-      runCheck();
+        break;
     }
-  }, [isLoading]);
+  }, [status]);
 
   return (
     <Stack id="contentWindow" alignItems="center" marginTop={2}>
+      <Head>
+        <title>Verified YouTube Channel Owner</title>
+      </Head>
       <Box
         id="contentArea"
         sx={{
